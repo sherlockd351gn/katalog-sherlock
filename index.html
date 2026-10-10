@@ -14,7 +14,7 @@
 
   html, body {
     width: 100%;
-    overflow-x: hidden; /* Mencegah geser horizontal di iPhone */
+    overflow-x: hidden;
   }
 
   body { 
@@ -42,6 +42,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.2);
   }
   
@@ -49,6 +50,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    flex-wrap: wrap;
+    flex: 1;
   }
 
   .region-selector-bar label { font-size: 13px; font-weight: bold; }
@@ -64,6 +67,24 @@
     cursor: pointer;
   }
 
+  /* FITUR SEARCH BAR */
+  .search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 280px;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 13px;
+    border: none;
+    border-radius: 4px;
+    outline: none;
+  }
+
   .btn-pdf {
     padding: 6px 14px;
     font-size: 13px;
@@ -77,9 +98,23 @@
     align-items: center;
     gap: 6px;
     transition: background 0.2s;
+    white-space: nowrap;
   }
 
   .btn-pdf:hover { background: #008540; }
+
+  /* TAMPILKAN TOMBOL PDF HANYA DI DESKTOP */
+  @media screen and (max-width: 1023px) {
+    .desktop-only {
+      display: none !important;
+    }
+  }
+
+  @media screen and (min-width: 1024px) {
+    .desktop-only {
+      display: flex !important;
+    }
+  }
 
   #catalog-container {
     width: 100%;
@@ -89,7 +124,7 @@
     gap: 20px;
   }
 
-  /* WADAH HALAMAN A4 (DESKTOP) */
+  /* WADAH HALAMAN A4 */
   .page { 
     width: 210mm; 
     max-width: 100%;
@@ -136,8 +171,17 @@
     display: grid; 
     grid-template-columns: 48px 1fr; 
     gap: 8px; 
+    transition: background-color 0.5s ease, transform 0.3s ease;
   }
   
+  /* EFEK SOROT KUNING SAAT PRODUK DITEMUKAN DARI SEARCH */
+  .highlight-product {
+    background-color: #fff8bc !important;
+    outline: 3px solid #ffc400;
+    border-radius: 4px;
+    transform: scale(1.01);
+  }
+
   .side-label { 
     display: flex; 
     flex-direction: column; 
@@ -241,7 +285,7 @@
     flex-direction: column; 
     justify-content: flex-start;
     position: relative; 
-    overflow-x: auto; /* Memungkinkan tabel di-scroll halus jika layar sangat sempit */
+    overflow-x: auto;
   }
   .unit-tag { 
     align-self: flex-end; 
@@ -322,23 +366,26 @@
     color: #fff; font-size: 35px; font-weight: bold; cursor: pointer;
   }
 
-  /* ========================================================
-     KHUSUS LAYAR HP / MOBILE (iPHONE, ANDROID, DLSB)
-     ======================================================== */
+  /* RESPONSIF LAYAR HP */
   @media screen and (max-width: 768px) {
-    body { 
-      padding: 0; 
-    }
+    body { padding: 0; }
     
     .region-selector-bar { 
       max-width: 100%; 
-      flex-direction: row; 
+      flex-direction: column; 
+      align-items: stretch;
       gap: 8px; 
       padding: 10px;
     }
     
-    .region-selector-bar label { 
-      display: none; /* Sembunyikan label "Wilayah Harga" di HP agar muat */
+    .controls-group {
+      justify-content: space-between;
+    }
+
+    .region-selector-bar label { display: none; }
+
+    .search-container {
+      max-width: 100%;
     }
 
     .page { 
@@ -349,86 +396,48 @@
       border-bottom: 6px solid #e9e9e9;
     }
 
-    .header h1 { 
-      font-size: 16px; 
-    }
-
-    .section { 
-      grid-template-columns: 32px 1fr; 
-      gap: 6px; 
-    }
-
-    .side-label .tag { 
-      font-size: 7.5px; 
-      min-height: 30px; 
-    }
-
-    .side-label .vertical { 
-      font-size: 9px; 
-    }
-
-    .product-panel { 
-      grid-template-columns: 100px 1fr; 
-      gap: 6px; 
-    }
-
-    .card-photo { 
-      min-height: 110px; 
-    }
-
-    .card-photo img { 
-      max-height: 100px; 
-    }
-
-    .card-title h2 { 
-      font-size: 13px; 
-    }
-
-    table { 
-      font-size: 8px; 
-    }
-
-    th, td { 
-      padding: 4px 2px; 
-    }
-
-    .footer { 
-      font-size: 7.5px; 
-      grid-template-columns: 30px 1fr 100px; 
-      padding: 0 5px; 
-    }
-
-    .page-number { 
-      font-size: 18px; 
-    }
+    .header h1 { font-size: 16px; }
+    .section { grid-template-columns: 32px 1fr; gap: 6px; }
+    .side-label .tag { font-size: 7.5px; min-height: 30px; }
+    .side-label .vertical { font-size: 9px; }
+    .product-panel { grid-template-columns: 100px 1fr; gap: 6px; }
+    .card-photo { min-height: 110px; }
+    .card-photo img { max-height: 100px; }
+    .card-title h2 { font-size: 13px; }
+    table { font-size: 8px; }
+    th, td { padding: 4px 2px; }
+    .footer { font-size: 7.5px; grid-template-columns: 30px 1fr 100px; padding: 0 5px; }
+    .page-number { font-size: 18px; }
   }
- /* Sembunyikan tombol PDF pada layar tablet dan HP (lebar di bawah 1024px) */
-@media screen and (max-width: 1023px) {
-  .desktop-only {
-    display: none !important;
-  }
-}
-
-/* Tampilkan tombol PDF hanya pada layar Desktop (lebar 1024px ke atas) */
-@media screen and (min-width: 1024px) {
-  .desktop-only {
-    display: flex !important;
-  }
-}
 </style>
 </head>
 <body>
 
 <div class="region-selector-bar">
   <div class="controls-group">
-    <label for="regionSelect">📍 Wilayah Harga:</label>
+    <label for="regionSelect">📍 Wilayah:</label>
     <select id="regionSelect" onchange="updateWilayah(this.value)">
       <option value="Jabodetabek" selected>Jabodetabek</option>
       <option value="Jawa">Jawa</option>
       <option value="Sumatra">Sumatra</option>
       <option value="Luar Jawa">Luar Jawa</option>
     </select>
+
+    <!-- KOLOM SEARCH DENGAN AUTOCOMPLETE DATALIST -->
+    <div class="search-container">
+      <input 
+        type="text" 
+        id="searchInput" 
+        class="search-input" 
+        placeholder="🔍 Cari SKU / Judul Produk..." 
+        list="productsDatalist"
+        onchange="searchProduct(this.value)"
+        onkeyup="handleSearchKey(event)"
+      >
+      <datalist id="productsDatalist"></datalist>
+    </div>
   </div>
+
   <button class="btn-pdf desktop-only" onclick="generatePDF()">📄 Download PDF</button>
 </div>
 
@@ -445,6 +454,7 @@
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   var globalPagesData = null;
+  var searchLookup = [];
 
   async function fetchCatalogFromSupabase() {
     try {
@@ -474,6 +484,8 @@
       }
 
       globalPagesData = processSupabaseData(allData);
+      buildSearchDatalist(allData);
+
       var initialRegion = document.getElementById('regionSelect').value;
       renderCatalog(initialRegion);
     } catch (err) {
@@ -539,6 +551,79 @@
     return structuredPages;
   }
 
+  // MEMBUAT DAFTAR OPSIONAL UNTUK REKOMENDASI PENCARIAN (DATALIST)
+  function buildSearchDatalist(rawData) {
+    var datalist = document.getElementById('productsDatalist');
+    datalist.innerHTML = '';
+    searchLookup = [];
+
+    var addedKeys = new Set();
+
+    rawData.forEach(function(row) {
+      var sku = (row['SKU'] || '').toString().trim();
+      var title = (row['Title'] || '').toString().trim();
+      var page = (row['Page'] || '').toString().trim();
+
+      if (sku && !addedKeys.has('sku_' + sku)) {
+        addedKeys.add('sku_' + sku);
+        searchLookup.push({ query: sku.toLowerCase(), page: page, title: title, sku: sku });
+        var opt = document.createElement('option');
+        opt.value = sku + ' (' + title + ' - Hal ' + page + ')';
+        datalist.appendChild(opt);
+      }
+
+      if (title && !addedKeys.has('title_' + title)) {
+        addedKeys.add('title_' + title);
+        searchLookup.push({ query: title.toLowerCase(), page: page, title: title, sku: sku });
+        var optTitle = document.createElement('option');
+        optTitle.value = title + ' (Hal ' + page + ')';
+        datalist.appendChild(optTitle);
+      }
+    });
+  }
+
+  function handleSearchKey(event) {
+    if (event.key === 'Enter') {
+      searchProduct(event.target.value);
+    }
+  }
+
+  // FUNGSI UTAMA UNTUK DIRECT / LOMPAT KE HALAMAN DAN SEKSI PRODUK
+  function searchProduct(term) {
+    if (!term || term.trim() === '') return;
+
+    var cleanTerm = term.split('(')[0].trim().toLowerCase();
+
+    // Cari elemen produk di DOM berdasarkan ID SKU atau Judul
+    var allSections = document.querySelectorAll('.section');
+    var targetElement = null;
+
+    for (var i = 0; i < allSections.length; i++) {
+      var section = allSections[i];
+      var sectionText = section.innerText.toLowerCase();
+      
+      if (sectionText.includes(cleanTerm)) {
+        targetElement = section;
+        break;
+      }
+    }
+
+    if (targetElement) {
+      // 1. Gulir halus langsung ke posisi kartu produk
+      targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // 2. Beri efek sorot kuning animasi
+      document.querySelectorAll('.section').forEach(el => el.classList.remove('highlight-product'));
+      targetElement.classList.add('highlight-product');
+
+      setTimeout(function() {
+        targetElement.classList.remove('highlight-product');
+      }, 3500);
+    } else {
+      alert('Produk / SKU "' + term + '" tidak ditemukan.');
+    }
+  }
+
   function formatRp(val) {
     if (typeof val === 'number') return 'Rp ' + val.toLocaleString('id-ID');
     if (!val) return 'Rp 0';
@@ -578,7 +663,7 @@
         prod.items.forEach(function(item) {
           var priceObj = item.prices[region] || { price: 'Rp 0', priceOnline: 'Rp 0' };
           rowsHTML += `
-            <tr>
+            <tr data-sku="${item.sku}">
               <td>${item.sku}</td>
               <td>${item.type}</td>
               <td>${item.size}</td>
@@ -596,7 +681,7 @@
           : `◈ ${prod.brand || 'SHERLOCK'}<small>British Standard Tools</small>`;
 
         contentHTML += `
-          <section class="section">
+          <section class="section" data-title="${prod.title}">
             <aside class="side-label">
               <div class="tag">${prod.subCategory}</div>
               <div class="vertical">${prod.category}</div>
