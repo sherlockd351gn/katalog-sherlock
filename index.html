@@ -590,27 +590,11 @@
     });
   }
 
-  async function generatePDF() {
-    window.scrollTo(0, 0);
-    var element = document.getElementById('catalog-container');
+ function generatePDF() {
     var selectedRegion = document.getElementById('regionSelect').value;
-    
-    var btn = document.querySelector('.btn-pdf');
-    btn.innerText = '⏳ Memproses Gambar & PDF...';
-    btn.disabled = true;
-
-    // Pre-load gambar menjadi base64 sebelum render
-    const images = element.querySelectorAll('img.prod-img');
-    for (let img of images) {
-      if (img.src && !img.src.startsWith('data:')) {
-        try {
-          let b64 = await imageToBase64(img.src);
-          img.src = b64;
-        } catch (e) {
-          console.warn('Gagal konversi gambar:', e);
-        }
-      }
-    }
+    // Buka file pdf.html di tab baru dengan membawa parameter wilayah
+    window.open('pdf.html?region=' + encodeURIComponent(selectedRegion), '_blank');
+  }
 
     var opt = {
       margin:       0,
