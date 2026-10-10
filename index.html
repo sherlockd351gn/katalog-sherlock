@@ -848,8 +848,11 @@
     var selectedRegion = document.getElementById('regionSelect').value;
     var printMode = document.querySelector('input[name="printMode"]:checked').value;
     
-    // Buka pdf.html dengan membawa parameter region dan mode cetak
-    window.open('pdf.html?region=' + encodeURIComponent(selectedRegion) + '&mode=' + encodeURIComponent(printMode), '_blank');
+    if (printMode === 'no-online') {
+      window.open('pdf-no-online.html?region=' + encodeURIComponent(selectedRegion), '_blank');
+    } else {
+      window.open('pdf.html?region=' + encodeURIComponent(selectedRegion), '_blank');
+    }
     
     document.getElementById('printMenu').classList.remove('show');
   }
