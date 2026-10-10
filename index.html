@@ -348,8 +348,8 @@
   <div class="controls-group">
     <label for="regionSelect">📍 Wilayah Harga:</label>
     <select id="regionSelect" onchange="updateWilayah(this.value)">
-      <option value="Jabodetabek">Jabodetabek</option>
-      <option value="Jawa" selected>Jawa</option>
+      <option value="Jabodetabek" selected>Jabodetabek</option>
+      <option value="Jawa">Jawa</option>
       <option value="Sumatra">Sumatra</option>
       <option value="Luar Jawa">Luar Jawa</option>
     </select>
@@ -381,7 +381,7 @@
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        document.getElementById('catalog-container').innerText = 'Data produk tidak ditemukan di Supabase.';
+        document.getElementById('catalog-container').innerText = 'Data produk tidak ditemukan di database Supabase.';
         return;
       }
 
@@ -390,7 +390,7 @@
       renderCatalog(initialRegion);
     } catch (err) {
       console.error('Gagal mengambil data:', err);
-      document.getElementById('catalog-container').innerText = 'Gagal memuat data dari database.';
+      document.getElementById('catalog-container').innerText = 'Gagal memuat data dari database. Silakan refresh halaman.';
     }
   }
 
@@ -400,10 +400,10 @@
     rawData.forEach(function(row) {
       var pageNum = row['Page'];
       var cardOrder = parseInt(row['Urutan Card']) || 99;
-      var sku = row['SKU'];
-      var masterCategory = row['Master Kategori'];
-      var category = row['Kategori'];
-      var subCategory = row['Sub Kategori'];
+      var sku = row['SKU'] || '';
+      var masterCategory = row['Master Kategori'] || '';
+      var category = row['Kategori'] || '';
+      var subCategory = row['Sub Kategori'] || '';
       var brand = row['Brand'] || '';
       var title = row['Title'] || '';
       var type = row['Type'] || '';
@@ -483,7 +483,9 @@
       var pageDiv = document.createElement('main');
       pageDiv.className = 'page';
       
-      var masterCategoryText = (productsList.length > 0) ? productsList[0].masterCategory : 'PERLENGKAPAN KEAMANAN';
+      var masterCategoryText = (productsList.length > 0 && productsList[0].masterCategory) 
+        ? productsList[0].masterCategory 
+        : 'PERLENGKAPAN KEAMANAN';
 
       var contentHTML = `
         <div>
@@ -508,13 +510,19 @@
             </tr>`;
         });
 
-        var photoHTML = prod.photo 
-          ? `<img src="${prod.photo}" class="prod-img" alt="Foto Produk" onclick="zoomImage(this.src)">` 
-          : '<div style="color:#aaa;font-size:10px;">FOTO PRODUK</div>';
+        // Penanganan Foto Produk Aman dari Nilai NULL
+        var photoHTML = (prod.photo && typeof prod.photo === 'string' && prod.photo.trim() !== '') 
+          ? `<img src="${prod.photo}" alt="Foto Produk" onclick="zoomImage(this.src)">` 
+          : '<div style="color:#aaa;font-size:10px;font-weight:bold;">FOTO PRODUK</div>';
 
-        var brandHTML = prod.brand.startsWith('http') 
-          ? `<img src="${prod.brand}" class="prod-img" alt="Logo Brand" onclick="zoomImage(this.src)">` 
-          : `◈ ${prod.brand}<small>British Standard Tools</small>`;
+        // Penanganan Brand Aman dari Nilai NULL
+        var brandHTML = '';
+        if (prod.brand && typeof prod.brand === 'string' && prod.brand.startsWith('http')) {
+          brandHTML = `<img src="${prod.brand}" alt="Logo Brand" onclick="zoomImage(this.src)">`;
+        } else {
+          var brandText = prod.brand || 'SHERLOCK';
+          brandHTML = `◈ ${brandText}<small>British Standard Tools</small>`;
+        }
 
         contentHTML += `
           <section class="section">
@@ -570,59 +578,12 @@
     document.getElementById('imageModal').style.display = 'none';
   }
 
-  // Helper untuk mengubah URL gambar menjadi Base64 agar PDF tidak blank
-  function imageToBase64(url) {
-    return new Promise((resolve) => {
-      var img = new Image();
-      img.crossOrigin = 'Anonymous';
-      img.onload = function () {
-        var canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/jpeg'));
-      };
-      img.onerror = function () {
-        resolve(url); // Jika gagal, gunakan URL asli
-      };
-      img.src = url;
-    });
-  }
-
- function generatePDF() {
+  function generatePDF() {
     var selectedRegion = document.getElementById('regionSelect').value;
-    // Buka file pdf.html di tab baru dengan membawa parameter wilayah
     window.open('pdf.html?region=' + encodeURIComponent(selectedRegion), '_blank');
   }
 
-    var opt = {
-      margin:       0,
-      filename:     'Katalog_Sherlock_' + selectedRegion + '.pdf',
-      image:        { type: 'jpeg', quality: 0.95 },
-      html2canvas:  { 
-        scale: 1.5,
-        useCORS: true, 
-        allowTaint: true,
-        logging: false, 
-        scrollX: 0, 
-        scrollY: 0 
-      },
-      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak:    { mode: 'css', before: '.html2pdf__page-break' }
-    };
-
-    html2pdf().set(opt).from(element).save().then(function() {
-      btn.innerText = '📄 Download PDF';
-      btn.disabled = false;
-    }).catch(function(err) {
-      console.error('Error PDF:', err);
-      alert('Gagal mendownload PDF.');
-      btn.innerText = '📄 Download PDF';
-      btn.disabled = false;
-    });
-  }
-
+  // Jalankan Otomatis Panggilan Data
   fetchCatalogFromSupabase();
 </script>
 </body>
