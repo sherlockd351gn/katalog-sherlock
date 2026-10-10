@@ -299,4 +299,254 @@
     padding: 20px;
   }
   .image-modal-content {
-    max-width: 90
+    max-width: 90%; max-height: 85vh;
+    object-fit: contain; border-radius: 6px;
+    background: #fff; padding: 10px;
+  }
+  .close-modal {
+    position: absolute; top: 15px; right: 25px;
+    color: #fff; font-size: 35px; font-weight: bold; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="region-selector-bar">
+  <div class="controls-group">
+    <label for="regionSelect">📍 Wilayah Harga:</label>
+    <select id="regionSelect" onchange="updateWilayah(this.value)">
+      <option value="Jabodetabek" selected>Jabodetabek</option>
+      <option value="Jawa">Jawa</option>
+      <option value="Sumatra">Sumatra</option>
+      <option value="Luar Jawa">Luar Jawa</option>
+    </select>
+  </div>
+  <button class="btn-pdf" onclick="generatePDF()">📄 Download PDF</button>
+</div>
+
+<div id="catalog-container">Memuat data dari Supabase...</div>
+
+<div id="imageModal" class="image-modal" onclick="closeZoom()">
+  <span class="close-modal" onclick="closeZoom()">&times;</span>
+  <img class="image-modal-content" id="modalImg" alt="Zoom Foto">
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://yarudntqrnwljykieugl.supabase.co'; 
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcnVkbnRxcm53bGp5a2lldWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTc1NTIsImV4cCI6MjEwNzE3MzU1Mn0.cdJbmQhc_xqCJPOjJcDRJapgG9bIXjj0XbrB6RpYXKI';
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  var globalPagesData = null;
+
+  async function fetchCatalogFromSupabase() {
+    try {
+      let allData = [];
+      let from = 0;
+      const step = 1000;
+      let keepFetching = true;
+
+      while (keepFetching) {
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select('*')
+          .range(from, from + step - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = allData.concat(data);
+          if (data.length < step) {
+            keepFetching = false;
+          } else {
+            from += step;
+          }
+        } else {
+          keepFetching = false;
+        }
+      }
+
+      globalPagesData = processSupabaseData(allData);
+      var initialRegion = document.getElementById('regionSelect').value;
+      renderCatalog(initialRegion);
+    } catch (err) {
+      console.error('Gagal mengambil data:', err);
+      document.getElementById('catalog-container').innerText = 'Gagal memuat data dari database.';
+    }
+  }
+
+  function processSupabaseData(rawData) {
+    var pages = {};
+
+    rawData.forEach(function(row) {
+      var rawPage = row['Page'];
+      if (rawPage === null || rawPage === undefined || String(rawPage).trim() === '') return;
+      var pageNum = String(rawPage).trim();
+
+      var cardOrder = parseInt(row['Urutan Card']) || 99;
+      var sku = row['SKU'] || '';
+      var masterCategory = row['Master Kategori'] || '';
+      var category = row['Kategori'] || '';
+      var subCategory = row['Sub Kategori'] || '';
+      var brand = row['Brand'] || '';
+      var title = row['Title'] || '';
+      var type = row['Type'] || '';
+      var size = row['Size'] || '';
+      var photo = row['Foto'] || '';
+      var uom = row['UOM'] || 'Pcs';
+
+      var prices = {
+        'Jabodetabek': { price: formatRp(row['Harga Jabodetabek']), priceOnline: formatRp(row['Harga Online Jabodetabek']) },
+        'Jawa':        { price: formatRp(row['Harga Jawa']), priceOnline: formatRp(row['Harga Online Jawa']) },
+        'Sumatra':     { price: formatRp(row['Harga Sumatra']), priceOnline: formatRp(row['Harga Online Sumatra']) },
+        'Luar Jawa':   { price: formatRp(row['Harga Luar Jawa']), priceOnline: formatRp(row['Harga Online Luar Jawa']) }
+      };
+
+      if (!pages[pageNum]) pages[pageNum] = {};
+
+      var productKey = pageNum + '_' + cardOrder + '_' + subCategory + '_' + title + '_' + brand;
+      if (!pages[pageNum][productKey]) {
+        pages[pageNum][productKey] = {
+          title: title, brand: brand, masterCategory: masterCategory,
+          category: category, subCategory: subCategory, photo: photo,
+          uom: uom, cardOrder: cardOrder, items: []
+        };
+      }
+
+      pages[pageNum][productKey].items.push({ sku: sku, type: type, size: size, prices: prices });
+    });
+
+    var structuredPages = {};
+    var sortedPageKeys = Object.keys(pages).sort(function(a, b) {
+      var numA = parseInt(a.replace(/\D/g, '')) || 0;
+      var numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+
+    sortedPageKeys.forEach(function(p) {
+      var productsArray = Object.keys(pages[p]).map(function(k) { return pages[p][k]; });
+      productsArray.sort(function(a, b) { return a.cardOrder - b.cardOrder; });
+      structuredPages[p] = productsArray;
+    });
+
+    return structuredPages;
+  }
+
+  function formatRp(val) {
+    if (typeof val === 'number') return 'Rp ' + val.toLocaleString('id-ID');
+    if (!val) return 'Rp 0';
+    if (typeof val === 'string' && val.startsWith('Rp')) return val;
+    return 'Rp ' + val;
+  }
+
+  function updateWilayah(selectedRegion) {
+    if (globalPagesData) renderCatalog(selectedRegion);
+  }
+
+  function renderCatalog(region) {
+    var container = document.getElementById('catalog-container');
+    container.innerHTML = '';
+
+    var pageKeys = Object.keys(globalPagesData);
+
+    pageKeys.forEach(function(pageNum) {
+      var productsList = globalPagesData[pageNum];
+      var pageDiv = document.createElement('main');
+      pageDiv.className = 'page';
+      
+      var masterCategoryText = (productsList.length > 0 && productsList[0].masterCategory) 
+        ? productsList[0].masterCategory 
+        : 'PERLENGKAPAN KEAMANAN';
+
+      var contentHTML = `
+        <div>
+          <header class="header">
+            <h1>${masterCategoryText}</h1>
+            <div class="subtitle">Harga Area ${region} 2026 - Vol.7</div>
+          </header>
+          <div class="content">`;
+
+      productsList.forEach(function(prod) {
+        var rowsHTML = '';
+        prod.items.forEach(function(item) {
+          var priceObj = item.prices[region] || { price: 'Rp 0', priceOnline: 'Rp 0' };
+          rowsHTML += `
+            <tr>
+              <td>${item.sku}</td>
+              <td>${item.type}</td>
+              <td>${item.size}</td>
+              <td class="price-cell">${priceObj.price}</td>
+              <td class="online-cell">${priceObj.priceOnline}</td>
+            </tr>`;
+        });
+
+        var photoHTML = (prod.photo && typeof prod.photo === 'string' && prod.photo.startsWith('http')) 
+          ? `<img src="${prod.photo}" alt="Foto Produk" onclick="zoomImage(this.src)">` 
+          : '<div style="color:#aaa;font-size:10px;font-weight:bold;">FOTO PRODUK</div>';
+
+        var brandHTML = (prod.brand && typeof prod.brand === 'string' && prod.brand.startsWith('http'))
+          ? `<img src="${prod.brand}" alt="Logo Brand" onclick="zoomImage(this.src)">`
+          : `◈ ${prod.brand || 'SHERLOCK'}<small>British Standard Tools</small>`;
+
+        contentHTML += `
+          <section class="section">
+            <aside class="side-label">
+              <div class="tag">${prod.subCategory}</div>
+              <div class="vertical">${prod.category}</div>
+            </aside>
+            <div class="product-panel">
+              <div class="card-brand">${brandHTML}</div>
+              <div class="card-title"><h2>${prod.title}</h2></div>
+              <div class="card-photo">${photoHTML}</div>
+              <div class="card-table-container">
+                <div class="unit-tag">UOM: ${prod.uom}</div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 28%;">SKU Number</th>
+                      <th style="width: 17%;">Type</th>
+                      <th style="width: 15%;">Size</th>
+                      <th class="price-head" style="width: 20%;">Harga (Rp)</th>
+                      <th class="online-head" style="width: 20%;">Harga Online<br>Terendah</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rowsHTML}</tbody>
+                </table>
+              </div>
+            </div>
+          </section>`;
+      });
+
+      contentHTML += `
+          </div>
+        </div>
+        <footer class="footer">
+          <div class="page-number">${pageNum}</div>
+          <div class="phone">☎ : (021) 2906 2017 / 2906 2018<br>0812 8703 0377 / 0822 9956 5272</div>
+          <div class="fax">▣ : (021) 2906 2019</div>
+        </footer>`;
+
+      pageDiv.innerHTML = contentHTML;
+      container.appendChild(pageDiv);
+    });
+  }
+
+  function zoomImage(src) {
+    var modal = document.getElementById('imageModal');
+    var modalImg = document.getElementById('modalImg');
+    modal.style.display = 'flex';
+    modalImg.src = src;
+  }
+
+  function closeZoom() {
+    document.getElementById('imageModal').style.display = 'none';
+  }
+
+  function generatePDF() {
+    var selectedRegion = document.getElementById('regionSelect').value;
+    window.open('pdf.html?region=' + encodeURIComponent(selectedRegion), '_blank');
+  }
+
+  fetchCatalogFromSupabase();
+</script>
+</body>
+</html>
