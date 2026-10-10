@@ -374,16 +374,15 @@
 
   async function fetchCatalogFromSupabase() {
     try {
-      // Ambil hingga 2000 data sekaligus secara aman
+      // Ambil seluruh data tanpa batasan offset range
       const { data, error } = await supabaseClient
         .from('products')
-        .select('*')
-        .range(0, 1999);
+        .select('*');
 
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        document.getElementById('catalog-container').innerText = 'Data produk tidak ditemukan di Supabase.';
+        document.getElementById('catalog-container').innerText = 'Data produk tidak ditemukan (Tabel products di Supabase masih kosong).';
         return;
       }
 
@@ -392,7 +391,7 @@
       renderCatalog(initialRegion);
     } catch (err) {
       console.error('Gagal mengambil data:', err);
-      document.getElementById('catalog-container').innerText = 'Gagal memuat data dari database. Pastikan RLS / Data API sudah aktif.';
+      document.getElementById('catalog-container').innerText = 'Gagal memuat data. Periksa kembali nama tabel & koneksi Supabase Anda.';
     }
   }
 
