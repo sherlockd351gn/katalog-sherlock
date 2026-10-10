@@ -304,6 +304,7 @@
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   const urlParams = new URLSearchParams(window.location.search);
   const selectedRegion = urlParams.get('region') || 'Jabodetabek';
+  const printMode = urlParams.get('mode') || 'full'; // 'full' ATAU 'no-online'
 
   async function startPdfProcess() {
     try {
@@ -333,7 +334,7 @@
       }
 
       const processedPages = processSupabaseData(allData);
-      renderPdfHTML(processedPages, selectedRegion);
+      renderPdfHTML(processedPages, selectedRegion, printMode);
 
     } catch (err) {
       console.error(err);
@@ -404,10 +405,12 @@
     return 'Rp ' + val;
   }
 
-  function renderPdfHTML(pagesData, region) {
+  function renderPdfHTML(pagesData, region, mode) {
     var container = document.getElementById('pdf-container');
     container.innerHTML = '';
     var pageKeys = Object.keys(pagesData);
+
+    var hideOnline = (mode === 'no-online');
 
     pageKeys.forEach(function(pageNum) {
       var productsList = pagesData[pageNum];
@@ -430,13 +433,14 @@
         var rowsHTML = '';
         prod.items.forEach(function(item) {
           var priceObj = item.prices[region] || { price: 'Rp 0', priceOnline: 'Rp 0' };
+          
           rowsHTML += `
             <tr>
               <td>${item.sku}</td>
               <td>${item.type}</td>
               <td>${item.size}</td>
               <td class="price-cell">${priceObj.price}</td>
-              <td class="online-cell">${priceObj.priceOnline}</td>
+              ${hideOnline ? '' : `<td class="online-cell">${priceObj.priceOnline}</td>`}
             </tr>`;
         });
 
@@ -447,6 +451,28 @@
         var brandHTML = (prod.brand && typeof prod.brand === 'string' && prod.brand.startsWith('http'))
           ? `<img src="${prod.brand}" alt="Brand">` 
           : `◈ ${prod.brand || 'SHERLOCK'}<small>British Standard Tools</small>`;
+
+        // Konfigurasi Lebar Kolom Tabel Berdasarkan Mode Cetak
+        var tableHeadHTML = hideOnline ? `
+          <thead>
+            <tr>
+              <th style="width: 35%;">SKU Number</th>
+              <th style="width: 25%;">Type</th>
+              <th style="width: 15%;">Size</th>
+              <th class="price-head" style="width: 25%;">Harga (Rp)</th>
+            </tr>
+          </thead>
+        ` : `
+          <thead>
+            <tr>
+              <th style="width: 28%;">SKU Number</th>
+              <th style="width: 17%;">Type</th>
+              <th style="width: 15%;">Size</th>
+              <th class="price-head" style="width: 20%;">Harga (Rp)</th>
+              <th class="online-head" style="width: 20%;">Harga Online<br>Terendah</th>
+            </tr>
+          </thead>
+        `;
 
         contentHTML += `
           <section class="section">
@@ -461,15 +487,7 @@
               <div class="card-table-container">
                 <div class="unit-tag">UOM: ${prod.uom}</div>
                 <table>
-                  <thead>
-                    <tr>
-                      <th style="width: 28%;">SKU Number</th>
-                      <th style="width: 17%;">Type</th>
-                      <th style="width: 15%;">Size</th>
-                      <th class="price-head" style="width: 20%;">Harga (Rp)</th>
-                      <th class="online-head" style="width: 20%;">Harga Online<br>Terendah</th>
-                    </tr>
-                  </thead>
+                  ${tableHeadHTML}
                   <tbody>${rowsHTML}</tbody>
                 </table>
               </div>
