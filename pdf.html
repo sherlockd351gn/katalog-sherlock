@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cetak Katalog Produk</title>
 
-<!-- Supabase JS Client -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
@@ -18,7 +17,6 @@
     color: #111; 
   }
 
-  /* Tombol Cetak Melayang di Kanan Atas */
   .floating-print-btn {
     position: fixed;
     top: 20px;
@@ -49,7 +47,8 @@
 
   .page { 
     width: 210mm; 
-    height: 295mm; 
+    min-height: 295mm; 
+    height: auto;
     background: #fff; 
     padding: 8mm 8mm 6mm 8mm; 
     display: flex; 
@@ -152,12 +151,14 @@
     text-align: center; 
     font-size: 14px; 
     font-weight: 800; 
-    background: #fff;
+    background: #ffffff !important;
+    border-radius: 4px;
   }
   .card-brand img { 
     max-width: 100%; 
     max-height: 45px; 
     object-fit: contain; 
+    background: #ffffff !important;
   }
   .card-brand small { 
     display: block; 
@@ -232,4 +233,265 @@
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
-  th.online-
+  th.online-head { 
+    background: #00a651 !important; 
+    color: #fff !important; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  td { font-weight: 700; }
+  td.price-cell { 
+    color: #2522db !important; 
+    text-align: right; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  td.online-cell { 
+    color: #00a651 !important; 
+    text-align: right; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .footer { 
+    height: 40px; 
+    background: #ffc400 !important; 
+    margin-top: 4px; 
+    display: grid; 
+    grid-template-columns: 40px 1fr 140px; 
+    align-items: center; 
+    padding: 0 10px; 
+    font-size: 9px; 
+    font-weight: 700; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .page-number { font-size: 24px; }
+  .phone { text-align: center; line-height: 1.2; }
+  .fax { text-align: right; }
+
+  @media print {
+    .floating-print-btn {
+      display: none !important;
+    }
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+    body {
+      background: #fff;
+      padding: 0;
+    }
+    .page {
+      box-shadow: none;
+      margin: 0;
+      width: 100%;
+      height: 100vh;
+    }
+  }
+</style>
+</head>
+<body>
+
+<button class="floating-print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+
+<div id="pdf-container"></div>
+
+<script>
+  const SUPABASE_URL = 'https://yarudntqrnwljykieugl.supabase.co'; 
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcnVkbnRxcm53bGp5a2lldWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTc1NTIsImV4cCI6MjEwNzE3MzU1Mn0.cdJbmQhc_xqCJPOjJcDRJapgG9bIXjj0XbrB6RpYXKI';
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const urlParams = new URLSearchParams(window.location.search);
+  const selectedRegion = urlParams.get('region') || 'Jabodetabek';
+
+  async function startPdfProcess() {
+    try {
+      let allData = [];
+      let from = 0;
+      const step = 1000;
+      let keepFetching = true;
+
+      while (keepFetching) {
+        const { data, error } = await supabaseClient
+          .from('products')
+          .select('*')
+          .range(from, from + step - 1);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+          allData = allData.concat(data);
+          if (data.length < step) {
+            keepFetching = false;
+          } else {
+            from += step;
+          }
+        } else {
+          keepFetching = false;
+        }
+      }
+
+      const processedPages = processSupabaseData(allData);
+      renderPdfHTML(processedPages, selectedRegion);
+
+    } catch (err) {
+      console.error(err);
+      alert('Gagal memproses data: ' + err.message);
+    }
+  }
+
+  function processSupabaseData(rawData) {
+    var pages = {};
+    rawData.forEach(function(row) {
+      var rawPage = row['Page'];
+      if (rawPage === null || rawPage === undefined || String(rawPage).trim() === '') return;
+      var pageNum = String(rawPage).trim();
+
+      var cardOrder = parseInt(row['Urutan Card']) || 99;
+      var sku = row['SKU'] || '';
+      var masterCategory = row['Master Kategori'] || '';
+      var category = row['Kategori'] || '';
+      var subCategory = row['Sub Kategori'] || '';
+      var brand = row['Brand'] || '';
+      var title = row['Title'] || '';
+      var type = row['Type'] || '';
+      var size = row['Size'] || '';
+      var photo = row['Foto'] || '';
+      var uom = row['UOM'] || 'Pcs';
+
+      var prices = {
+        'Jabodetabek': { price: formatRp(row['Harga Jabodetabek']), priceOnline: formatRp(row['Harga Online Jabodetabek']) },
+        'Jawa':        { price: formatRp(row['Harga Jawa']), priceOnline: formatRp(row['Harga Online Jawa']) },
+        'Sumatra':     { price: formatRp(row['Harga Sumatra']), priceOnline: formatRp(row['Harga Online Sumatra']) },
+        'Luar Jawa':   { price: formatRp(row['Harga Luar Jawa']), priceOnline: formatRp(row['Harga Online Luar Jawa']) }
+      };
+
+      if (!pages[pageNum]) pages[pageNum] = {};
+
+      var productKey = pageNum + '_' + cardOrder + '_' + subCategory + '_' + title + '_' + brand;
+      if (!pages[pageNum][productKey]) {
+        pages[pageNum][productKey] = {
+          title: title, brand: brand, masterCategory: masterCategory,
+          category: category, subCategory: subCategory, photo: photo,
+          uom: uom, cardOrder: cardOrder, items: []
+        };
+      }
+
+      pages[pageNum][productKey].items.push({ sku: sku, type: type, size: size, prices: prices });
+    });
+
+    var structuredPages = {};
+    var sortedPageKeys = Object.keys(pages).sort(function(a, b) {
+      var numA = parseInt(a.replace(/\D/g, '')) || 0;
+      var numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+
+    sortedPageKeys.forEach(function(p) {
+      var productsArray = Object.keys(pages[p]).map(function(k) { return pages[p][k]; });
+      productsArray.sort(function(a, b) { return a.cardOrder - b.cardOrder; });
+      structuredPages[p] = productsArray;
+    });
+
+    return structuredPages;
+  }
+
+  function formatRp(val) {
+    if (typeof val === 'number') return 'Rp ' + val.toLocaleString('id-ID');
+    if (!val) return 'Rp 0';
+    if (typeof val === 'string' && val.startsWith('Rp')) return val;
+    return 'Rp ' + val;
+  }
+
+  function renderPdfHTML(pagesData, region) {
+    var container = document.getElementById('pdf-container');
+    container.innerHTML = '';
+    var pageKeys = Object.keys(pagesData);
+
+    pageKeys.forEach(function(pageNum) {
+      var productsList = pagesData[pageNum];
+
+      var pageDiv = document.createElement('main');
+      pageDiv.className = 'page';
+      var masterCategoryText = (productsList.length > 0 && productsList[0].masterCategory) 
+        ? productsList[0].masterCategory 
+        : 'PERLENGKAPAN KEAMANAN';
+
+      var contentHTML = `
+        <div>
+          <header class="header">
+            <h1>${masterCategoryText}</h1>
+            <div class="subtitle">Harga Area ${region} 2026 - Vol.7</div>
+          </header>
+          <div class="content">`;
+
+      productsList.forEach(function(prod) {
+        var rowsHTML = '';
+        prod.items.forEach(function(item) {
+          var priceObj = item.prices[region] || { price: 'Rp 0', priceOnline: 'Rp 0' };
+          rowsHTML += `
+            <tr>
+              <td>${item.sku}</td>
+              <td>${item.type}</td>
+              <td>${item.size}</td>
+              <td class="price-cell">${priceObj.price}</td>
+              <td class="online-cell">${priceObj.priceOnline}</td>
+            </tr>`;
+        });
+
+        var photoHTML = (prod.photo && typeof prod.photo === 'string' && prod.photo.startsWith('http'))
+          ? `<img src="${prod.photo}" alt="Foto">` 
+          : '<div style="color:#aaa;font-size:10px;font-weight:bold;">FOTO PRODUK</div>';
+
+        var brandHTML = (prod.brand && typeof prod.brand === 'string' && prod.brand.startsWith('http'))
+          ? `<img src="${prod.brand}" alt="Brand">` 
+          : `◈ ${prod.brand || 'SHERLOCK'}<small>British Standard Tools</small>`;
+
+        contentHTML += `
+          <section class="section">
+            <aside class="side-label">
+              <div class="tag">${prod.subCategory}</div>
+              <div class="vertical">${prod.category}</div>
+            </aside>
+            <div class="product-panel">
+              <div class="card-brand">${brandHTML}</div>
+              <div class="card-title"><h2>${prod.title}</h2></div>
+              <div class="card-photo">${photoHTML}</div>
+              <div class="card-table-container">
+                <div class="unit-tag">UOM: ${prod.uom}</div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width: 28%;">SKU Number</th>
+                      <th style="width: 17%;">Type</th>
+                      <th style="width: 15%;">Size</th>
+                      <th class="price-head" style="width: 20%;">Harga (Rp)</th>
+                      <th class="online-head" style="width: 20%;">Harga Online<br>Terendah</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rowsHTML}</tbody>
+                </table>
+              </div>
+            </div>
+          </section>`;
+      });
+
+      contentHTML += `
+          </div>
+        </div>
+        <footer class="footer">
+          <div class="page-number">${pageNum}</div>
+          <div class="phone">☎ : (021) 2906 2017 / 2906 2018<br>0812 8703 0377 / 0822 9956 5272</div>
+          <div class="fax">▣ : (021) 2906 2019</div>
+        </footer>`;
+
+      pageDiv.innerHTML = contentHTML;
+      container.appendChild(pageDiv);
+    });
+  }
+
+  startPdfProcess();
+</script>
+</body>
+</html>
