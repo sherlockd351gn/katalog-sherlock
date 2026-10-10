@@ -402,6 +402,19 @@
       font-size: 18px; 
     }
   }
+ /* Sembunyikan tombol PDF pada layar tablet dan HP (lebar di bawah 1024px) */
+@media screen and (max-width: 1023px) {
+  .desktop-only {
+    display: none !important;
+  }
+}
+
+/* Tampilkan tombol PDF hanya pada layar Desktop (lebar 1024px ke atas) */
+@media screen and (min-width: 1024px) {
+  .desktop-only {
+    display: flex !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -416,7 +429,7 @@
       <option value="Luar Jawa">Luar Jawa</option>
     </select>
   </div>
-  <button class="btn-pdf" onclick="generatePDF()">📄 Download PDF</button>
+  <button class="btn-pdf desktop-only" onclick="generatePDF()">📄 Download PDF</button>
 </div>
 
 <div id="catalog-container">Memuat data dari Supabase...</div>
