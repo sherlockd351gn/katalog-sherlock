@@ -374,7 +374,6 @@
 
   async function fetchCatalogFromSupabase() {
     try {
-      // Ambil seluruh data tanpa batasan offset range
       const { data, error } = await supabaseClient
         .from('products')
         .select('*');
@@ -382,7 +381,7 @@
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        document.getElementById('catalog-container').innerText = 'Data produk tidak ditemukan (Tabel products di Supabase masih kosong).';
+        document.getElementById('catalog-container').innerText = 'Data produk tidak ditemukan di Supabase.';
         return;
       }
 
@@ -391,7 +390,7 @@
       renderCatalog(initialRegion);
     } catch (err) {
       console.error('Gagal mengambil data:', err);
-      document.getElementById('catalog-container').innerText = 'Gagal memuat data. Periksa kembali nama tabel & koneksi Supabase Anda.';
+      document.getElementById('catalog-container').innerText = 'Gagal memuat data dari database.';
     }
   }
 
@@ -510,11 +509,11 @@
         });
 
         var photoHTML = prod.photo 
-          ? `<img src="${prod.photo}" alt="Foto Produk" onclick="zoomImage(this.src)">` 
+          ? `<img src="${prod.photo}" class="prod-img" alt="Foto Produk" onclick="zoomImage(this.src)">` 
           : '<div style="color:#aaa;font-size:10px;">FOTO PRODUK</div>';
 
         var brandHTML = prod.brand.startsWith('http') 
-          ? `<img src="${prod.brand}" alt="Logo Brand" onclick="zoomImage(this.src)">` 
+          ? `<img src="${prod.brand}" class="prod-img" alt="Logo Brand" onclick="zoomImage(this.src)">` 
           : `◈ ${prod.brand}<small>British Standard Tools</small>`;
 
         contentHTML += `
@@ -571,19 +570,52 @@
     document.getElementById('imageModal').style.display = 'none';
   }
 
-  function generatePDF() {
+  // Helper untuk mengubah URL gambar menjadi Base64 agar PDF tidak blank
+  function imageToBase64(url) {
+    return new Promise((resolve) => {
+      var img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = function () {
+        var canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        var ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/jpeg'));
+      };
+      img.onerror = function () {
+        resolve(url); // Jika gagal, gunakan URL asli
+      };
+      img.src = url;
+    });
+  }
+
+  async function generatePDF() {
     window.scrollTo(0, 0);
     var element = document.getElementById('catalog-container');
     var selectedRegion = document.getElementById('regionSelect').value;
     
     var btn = document.querySelector('.btn-pdf');
-    btn.innerText = '⏳ Memproses PDF...';
+    btn.innerText = '⏳ Memproses Gambar & PDF...';
     btn.disabled = true;
+
+    // Pre-load gambar menjadi base64 sebelum render
+    const images = element.querySelectorAll('img.prod-img');
+    for (let img of images) {
+      if (img.src && !img.src.startsWith('data:')) {
+        try {
+          let b64 = await imageToBase64(img.src);
+          img.src = b64;
+        } catch (e) {
+          console.warn('Gagal konversi gambar:', e);
+        }
+      }
+    }
 
     var opt = {
       margin:       0,
       filename:     'Katalog_Sherlock_' + selectedRegion + '.pdf',
-      image:        { type: 'jpeg', quality: 0.98 },
+      image:        { type: 'jpeg', quality: 0.95 },
       html2canvas:  { 
         scale: 1.5,
         useCORS: true, 
@@ -596,20 +628,17 @@
       pagebreak:    { mode: 'css', before: '.html2pdf__page-break' }
     };
 
-    setTimeout(function() {
-      html2pdf().set(opt).from(element).save().then(function() {
-        btn.innerText = '📄 Download PDF';
-        btn.disabled = false;
-      }).catch(function(err) {
-        console.error('Error PDF:', err);
-        alert('Gagal mendownload PDF.');
-        btn.innerText = '📄 Download PDF';
-        btn.disabled = false;
-      });
-    }, 1000);
+    html2pdf().set(opt).from(element).save().then(function() {
+      btn.innerText = '📄 Download PDF';
+      btn.disabled = false;
+    }).catch(function(err) {
+      console.error('Error PDF:', err);
+      alert('Gagal mendownload PDF.');
+      btn.innerText = '📄 Download PDF';
+      btn.disabled = false;
+    });
   }
 
-  // Jalankan Panggilan Data
   fetchCatalogFromSupabase();
 </script>
 </body>
