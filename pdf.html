@@ -35,8 +35,8 @@
     box-shadow: 0 2px 10px rgba(0,0,0,0.5);
   }
 
-  #pdf-container {
-    margin-top: 60px;
+#pdf-container {
+    margin-top: 0;
     display: flex;
     flex-direction: column;
     gap: 0;
@@ -270,7 +270,6 @@
 </head>
 <body>
 
-<div id="status-bar">⏳ Menghubungkan ke Database Supabase...</div>
 <div id="pdf-container"></div>
 
 <script>
@@ -284,7 +283,6 @@
   const selectedRegion = urlParams.get('region') || 'Jawa';
 
   function setStatus(text) {
-    document.getElementById('status-bar').innerText = text;
   }
 
   async function startPdfProcess() {
