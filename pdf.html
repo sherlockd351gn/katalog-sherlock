@@ -180,18 +180,19 @@
   }
   
   .card-photo { 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    min-height: 155px; 
-    padding: 4px; 
-    background: #fafafa; 
-  }
-  .card-photo img { 
-    max-width: 100%; 
-    max-height: 150px; 
-    object-fit: contain; 
-  }
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  height: 100%; /* Ubah min-height kaku jadi 100% tinggi kontainer */
+  padding: 6px; 
+  background: #fafafa; 
+}
+
+.card-photo img { 
+  max-width: 100%; 
+  max-height: 250px; /* Perbesar batas tinggi maksimum gambar agar lebih jelas */
+  object-fit: contain; 
+}
   
   .card-table-container { 
     display: flex; 
@@ -214,12 +215,12 @@
     table-layout: fixed; 
     font-size: 9.5px; 
   }
-  th, td { 
-    border: 1px solid #111; 
-    padding: 5px 4px; 
-    text-align: center; 
-    vertical-align: middle; 
-  }
+th, td { 
+  border: 1px solid #111; 
+  padding: 3px 2px; /* Padatkan padding vertikal sedikit agar baris panjang tidak kelewat batas halaman */
+  text-align: center; 
+  vertical-align: middle; 
+}
   th { 
     background: #a6a6a6 !important; 
     color: #000 !important; 
