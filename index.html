@@ -301,11 +301,11 @@
   }
   
   .product-panel { 
-    display: grid; 
-    grid-template-columns: 170px 1fr; 
-    grid-template-rows: auto 1fr; 
-    gap: 8px; 
-  }
+  display: grid; 
+  grid-template-columns: 200px 1fr; /* Lebarkan wadah foto dari 170px ke 200px */
+  grid-template-rows: auto 1fr; 
+  gap: 8px; 
+}
   
   .card-brand { 
     padding: 4px; 
@@ -345,19 +345,22 @@
     text-transform: uppercase; 
   }
   
-  .card-photo { 
+ .card-photo { 
   display: flex; 
   align-items: center; 
   justify-content: center; 
-  height: 100%; /* Ubah min-height kaku jadi 100% tinggi kontainer */
-  padding: 6px; 
+  width: 100%;
+  height: 100%; /* Isi penuh dari atas ke bawah mengikuti tabel */
+  padding: 4px; 
   background: #fafafa; 
+  overflow: hidden;
 }
-
 .card-photo img { 
-  max-width: 100%; 
-  max-height: 250px; /* Perbesar batas tinggi maksimum gambar agar lebih jelas */
-  object-fit: contain; 
+  width: 100%; 
+  height: 100%; 
+  max-height: 100%; /* Izinkan foto membesar mengikuti tinggi wadah */
+  object-fit: contain; /* Tetap proporsional agar foto tidak gepeng */
+  cursor: pointer;
 }
   
   .card-table-container { 
