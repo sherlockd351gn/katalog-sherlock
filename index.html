@@ -350,17 +350,18 @@
   align-items: center; 
   justify-content: center; 
   width: 100%;
-  height: 100%; /* Isi penuh dari atas ke bawah mengikuti tabel */
+  height: 100%; /* Mengikuti tinggi tabel di sebelahnya */
   padding: 4px; 
   background: #fafafa; 
   overflow: hidden;
 }
+
 .card-photo img { 
-  width: 100%; 
-  height: 100%; 
-  max-height: 100%; /* Izinkan foto membesar mengikuti tinggi wadah */
-  object-fit: contain; /* Tetap proporsional agar foto tidak gepeng */
-  cursor: pointer;
+  width: auto;             /* Otomatis menyesuaikan rasio asli */
+  height: auto;            /* Otomatis menyesuaikan rasio asli */
+  max-width: 100%;         /* Mencegah gambar meluap ke kanan */
+  max-height: 100%;        /* Memungkinkan gambar membesar hingga 100% tinggi tabel */
+  object-fit: contain;     /* Mencegah gambar terpotong atau gepeng */
 }
   
   .card-table-container { 
