@@ -504,6 +504,57 @@
     .footer { font-size: 7.5px; grid-template-columns: 25px 1fr 90px; padding: 0 5px; }
     .page-number { font-size: 16px; }
   }
+ /* ATURAN KERTAS A4 UNTUK CETAK/PDF */
+  @page {
+    size: A4 portrait;
+    margin: 0; /* Menghilangkan margin bawaan browser agar layout penuh */
+  }
+
+  * { 
+    box-sizing: border-box; 
+  }
+
+  body { 
+    margin: 0; 
+    padding: 20px 0; 
+    background: #525659; 
+    font-family: Arial, sans-serif; 
+    color: #111; 
+  }
+
+  /* WADAH UTAMA HALAMAN A4 */
+  .page { 
+    width: 210mm; 
+    height: 297mm; /* Kunci tinggi tepat 297mm (A4 standar) */
+    max-height: 297mm;
+    background: #fff; 
+    padding: 8mm 8mm 6mm 8mm; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between; 
+    box-sizing: border-box;
+    page-break-after: always;
+    break-after: page;
+    page-break-inside: avoid;
+    break-inside: avoid;
+    overflow: hidden; /* Mencegah elemen meluap keluar halaman */
+  }
+
+  @media print {
+    .floating-print-btn {
+      display: none !important;
+    }
+    body {
+      background: #fff;
+      padding: 0;
+    }
+    .page {
+      box-shadow: none;
+      margin: 0;
+      width: 210mm;
+      height: 297mm;
+    }
+  }
 </style>
 </head>
 <body>
