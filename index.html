@@ -29,18 +29,18 @@
     gap: 20px; 
   }
   
-  /* BAR NAVIGASI ATAS */
-.region-selector-bar {
-    position: fixed; /* Mengunci baris navigasi agar ikut melayang saat di-scroll */
+  /* BAR NAVIGASI ATAS MELAYANG (STICKY ON SCROLL) */
+  .region-selector-bar {
+    position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 9999; /* Memastikan navigasi selalu berada di atas semua isi halaman */
+    z-index: 9999;
     background: #111;
     color: #fff;
     width: 100%;
     max-width: 210mm;
-    margin: 0 auto; /* Menjaga posisi tetap di tengah layar */
+    margin: 0 auto;
     padding: 10px 15px;
     display: flex;
     justify-content: space-between;
@@ -57,7 +57,10 @@
     flex: 1;
   }
 
-  .region-selector-bar label { font-size: 13px; font-weight: bold; }
+  .region-selector-bar label { 
+    font-size: 13px; 
+    font-weight: bold; 
+  }
   
   .region-selector-bar select {
     padding: 6px 12px;
@@ -110,7 +113,9 @@
     white-space: nowrap;
   }
 
-  .btn-pdf:hover { background: #008540; }
+  .btn-pdf:hover { 
+    background: #008540; 
+  }
 
   /* DROPDOWN CETAK KATALOG */
   .print-dropdown-container {
@@ -200,13 +205,13 @@
     }
   }
 
-#catalog-container {
+  #catalog-container {
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    margin-top: 60px; /* Memberikan ruang agar halaman A4 tidak tertutup navigasi */
+    margin-top: 60px; /* Jarak agar konten tidak tertutup bar navigasi melayang */
   }
 
   /* WADAH HALAMAN A4 DESKTOP */
@@ -305,11 +310,11 @@
   }
   
   .product-panel { 
-  display: grid; 
-  grid-template-columns: 200px 1fr; /* Lebarkan wadah foto dari 170px ke 200px */
-  grid-template-rows: auto 1fr; 
-  gap: 8px; 
-}
+    display: grid; 
+    grid-template-columns: 200px 1fr; 
+    grid-template-rows: auto 1fr; 
+    gap: 8px; 
+  }
   
   .card-brand { 
     padding: 4px; 
@@ -349,24 +354,25 @@
     text-transform: uppercase; 
   }
   
- .card-photo { 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  width: 100%;
-  height: 100%; /* Mengikuti tinggi tabel di sebelahnya */
-  padding: 4px; 
-  background: #fafafa; 
-  overflow: hidden;
-}
+  .card-photo { 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    width: 100%;
+    height: 100%;
+    padding: 4px; 
+    background: #fafafa; 
+    overflow: hidden;
+  }
 
-.card-photo img { 
-  width: auto;             /* Otomatis menyesuaikan rasio asli */
-  height: auto;            /* Otomatis menyesuaikan rasio asli */
-  max-width: 100%;         /* Mencegah gambar meluap ke kanan */
-  max-height: 100%;        /* Memungkinkan gambar membesar hingga 100% tinggi tabel */
-  object-fit: contain;     /* Mencegah gambar terpotong atau gepeng */
-}
+  .card-photo img { 
+    width: auto; 
+    height: auto; 
+    max-width: 100%; 
+    max-height: 100%; 
+    object-fit: contain; 
+    cursor: pointer;
+  }
   
   .card-table-container { 
     display: flex; 
@@ -390,12 +396,12 @@
     table-layout: fixed; 
     font-size: 9.5px; 
   }
- th, td { 
-  border: 1px solid #111; 
-  padding: 3px 2px; /* Padatkan padding vertikal sedikit agar baris panjang tidak kelewat batas halaman */
-  text-align: center; 
-  vertical-align: middle; 
-}
+  th, td { 
+    border: 1px solid #111; 
+    padding: 3px 2px; 
+    text-align: center; 
+    vertical-align: middle; 
+  }
   th { 
     background: #a6a6a6 !important; 
     color: #000 !important; 
@@ -476,6 +482,10 @@
 
     .search-container { flex: 1; max-width: 100%; }
     .search-input { font-size: 12px; padding: 6px 8px; }
+
+    #catalog-container {
+      margin-top: 90px; /* Jarak lebih tinggi untuk mobile karena nav 2 baris */
+    }
 
     .page { 
       width: 100vw; 
