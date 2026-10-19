@@ -30,20 +30,23 @@
   }
   
   /* BAR NAVIGASI ATAS */
-  .region-selector-bar {
-    position: sticky;
+.region-selector-bar {
+    position: fixed; /* Mengunci baris navigasi agar ikut melayang saat di-scroll */
     top: 0;
-    z-index: 1000;
+    left: 0;
+    right: 0;
+    z-index: 9999; /* Memastikan navigasi selalu berada di atas semua isi halaman */
     background: #111;
     color: #fff;
     width: 100%;
     max-width: 210mm;
+    margin: 0 auto; /* Menjaga posisi tetap di tengah layar */
     padding: 10px 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 10px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   }
   
   .controls-group {
@@ -197,12 +200,13 @@
     }
   }
 
-  #catalog-container {
+#catalog-container {
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 20px;
+    margin-top: 60px; /* Memberikan ruang agar halaman A4 tidak tertutup navigasi */
   }
 
   /* WADAH HALAMAN A4 DESKTOP */
