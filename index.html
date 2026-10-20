@@ -3,331 +3,294 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Katalog Digital Sherlock</title>
+<title>Katalog Produk Sherlock</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  * { box-sizing: border-box; }
-  body {
-    font-family: Arial, sans-serif;
-    background: #e0e0e0;
-    margin: 0;
-    padding: 0;
-    color: #333;
+  * { 
+    box-sizing: border-box; 
   }
 
-  /* BAR NAVIGASI UTAMA */
-  .navbar {
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  body { 
+    margin: 0; 
+    padding: 10px 0; 
+    background: #e9e9e9; 
+    font-family: Arial, sans-serif; 
+    color: #111; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    gap: 20px; 
+  }
+  
+  /* BAR NAVIGASI ATAS MELAYANG (STICKY ON SCROLL) */
+  .region-selector-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
     background: #111;
     color: #fff;
-    padding: 10px 20px;
+    width: 100%;
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 10px 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    gap: 10px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   }
-  .brand {
-    font-size: 18px;
-    font-weight: bold;
-    color: #ffc400;
-  }
-  .nav-controls {
+  
+  .controls-group {
     display: flex;
     align-items: center;
     gap: 10px;
-  }
-  select {
-    padding: 7px 12px;
-    border-radius: 4px;
-    border: 1px solid #444;
-    background: #222;
-    color: #fff;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  .btn-nav {
-    padding: 7px 12px;
-    font-size: 12px;
-    font-weight: bold;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-  }
-  .btn-blue { background: #007bff; color: #fff; }
-  .btn-blue:hover { background: #0056b3; }
-  .btn-green { background: #00a651; color: #fff; }
-  .btn-green:hover { background: #008540; }
-  .btn-red { background: #dc3545; color: #fff; }
-  .btn-red:hover { background: #bd2130; }
-
-  /* BANNER GREETING */
-  .greeting-banner {
-    max-width: 1100px;
-    margin: 15px auto 5px auto;
-    background: #fff;
-    padding: 15px 20px;
-    border-radius: 6px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  }
-  .greeting-banner h3 { margin: 0 0 5px 0; color: #111; font-size: 16px; }
-  .greeting-banner p { margin: 0; color: #666; font-size: 13px; }
-
-  /* CONTAINER HALAMAN KATALOG */
-  .catalog-container {
-    max-width: 1100px;
-    margin: 15px auto 40px auto;
-    padding: 0 10px;
+    flex-wrap: wrap;
+    flex: 1;
   }
 
-  .catalog-page {
-    background: #fff;
-    width: 100%;
-    min-height: 1000px;
-    margin-bottom: 25px;
-    padding: 25px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    border-radius: 4px;
+  .region-selector-bar label { 
+    font-size: 13px; 
+    font-weight: bold; 
   }
-
-  .loading-box {
-    text-align: center;
-    padding: 80px 20px;
-    color: #666;
-  }
-
-  /* GRID PRODUK / ITEM KATALOG */
-  .product-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 15px;
-    margin-top: 20px;
-  }
-
-  .product-card {
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 12px;
-    background: #fafafa;
-    text-align: center;
-  }
-
-  .product-card img {
-    max-width: 100%;
-    height: 140px;
-    object-fit: contain;
-    margin-bottom: 10px;
-    border-radius: 4px;
-  }
-
-  .product-title {
+  
+  .region-selector-bar select {
+    padding: 6px 12px;
     font-size: 13px;
     font-weight: bold;
+    border-radius: 4px;
+    border: none;
+    background: #ffc400;
     color: #111;
-    margin-bottom: 5px;
+    cursor: pointer;
   }
 
-  .product-sku {
-    font-size: 11px;
-    color: #888;
-    margin-bottom: 8px;
+  .region-selector-bar select:disabled {
+    background: #777;
+    color: #fff;
+    cursor: not-allowed;
   }
 
-  .product-price {
-    font-size: 14px;
+  /* FITUR SEARCH BAR */
+  .search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    max-width: 280px;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 13px;
+    border: none;
+    border-radius: 4px;
+    outline: none;
+  }
+
+  .btn-pdf {
+    padding: 6px 14px;
+    font-size: 13px;
     font-weight: bold;
-    color: #00a651;
+    border-radius: 4px;
+    border: none;
+    background: #00a651;
+    color: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+    white-space: nowrap;
   }
-</style>
-</head>
-<body>
 
-<!-- BAR NAVIGASI -->
-<div class="navbar">
-  <div class="brand">Sherlock Tools</div>
+  .btn-pdf:hover { 
+    background: #008540; 
+  }
+
+  /* TOMBOL KHUSUS SALES & LOGOUT */
+  .btn-share-toko {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 4px;
+    border: none;
+    background: #007bff;
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-share-toko:hover { background: #0056b3; }
+
+  .btn-logout-sales {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: bold;
+    border-radius: 4px;
+    border: none;
+    background: #dc3545;
+    color: #fff;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-logout-sales:hover { background: #bd2130; }
+
+  /* DROPDOWN CETAK KATALOG */
+  .print-dropdown-container {
+    position: relative;
+    display: inline-block;
+  }
+
+  .print-dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 110%;
+    background: #1e1e1e;
+    color: #fff;
+    min-width: 240px;
+    padding: 12px;
+    border-radius: 6px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    border: 1px solid #333;
+    z-index: 2000;
+  }
+
+  .print-dropdown-menu.show {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dropdown-title {
+    font-size: 11px;
+    font-weight: bold;
+    color: #ffc400;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: 4px;
+    background: #2a2a2a;
+    transition: background 0.2s;
+  }
+
+  .radio-option:hover {
+    background: #3a3a3a;
+  }
+
+  .radio-option input[type="radio"] {
+    accent-color: #ffc400;
+    cursor: pointer;
+  }
+
+  .btn-execute-print {
+    margin-top: 4px;
+    padding: 8px;
+    background: #00a651;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-execute-print:hover {
+    background: #008540;
+  }
+
+  /* TAMPILKAN TOMBOL PDF HANYA DI DESKTOP */
+  @media screen and (max-width: 1023px) {
+    .desktop-only {
+      display: none !important;
+    }
+  }
+
+  @media screen and (min-width: 1024px) {
+    .desktop-only {
+      display: flex !important;
+    }
+  }
+
+  #catalog-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin-top: 60px; /* Jarak agar konten tidak tertutup bar navigasi melayang */
+  }
+
+  /* WADAH HALAMAN A4 DESKTOP */
+  .page { 
+    width: 210mm; 
+    max-width: 100%;
+    min-height: 290mm;
+    height: auto; 
+    background: #fff; 
+    padding: 8mm 8mm 6mm 8mm; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15); 
+    box-sizing: border-box;
+  }
+
+  .header { 
+    padding-bottom: 6px; 
+    border-bottom: 2px solid #111; 
+    margin-bottom: 8px; 
+  }
+  .header h1 { 
+    margin: 0; 
+    font-size: 22px; 
+    font-weight: 800; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+  }
+  .header .subtitle { 
+    margin-top: 3px; 
+    font-size: 11px; 
+    font-style: italic; 
+    font-weight: bold; 
+    color: #333; 
+  }
   
-  <div class="nav-controls">
-    <label style="font-size: 12px; color: #aaa;">Wilayah:</label>
-    <select id="regionSelect" onchange="handleRegionChange()">
-      <option value="Jabodetabek">Jabodetabek</option>
-      <option value="Jawa">Jawa</option>
-      <option value="Sumatra">Sumatra</option>
-      <option value="Luar Jawa">Luar Jawa</option>
-    </select>
-
-    <a id="btnPrintPDF" href="pdf.html" target="_blank" class="btn-nav btn-green">📄 Lihat Tampilan Cetak</a>
-    <button id="btnShareToko" class="btn-nav btn-blue" onclick="handleShareToToko()" style="display:none;">🔗 Bagikan ke Toko</button>
-    <button id="btnLogout" class="btn-nav btn-red" onclick="handleLogout()" style="display:none;">🚪 Logout</button>
-  </div>
-</div>
-
-<!-- BANNER UCAPAN WELCOME -->
-<div class="greeting-banner">
-  <h3 id="welcomeMsg">Memuat Katalog...</h3>
-  <p id="subMsg">Silakan tunggu sejenak saat sistem menyinkronkan data.</p>
-</div>
-
-<!-- KONTEN UTAMA KATALOG -->
-<div class="catalog-container" id="catalogContent">
-  <div class="catalog-page">
-    <div class="loading-box">
-      <h3>🔄 Memuat data produk dari database...</h3>
-    </div>
-  </div>
-</div>
-
-<script>
-  const SUPABASE_URL = 'https://yarudntqrnwljykieugl.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcnVkbnRxcm53bGp5a2lldWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTc1NTIsImV4cCI6MjEwNzE3MzU1Mn0.cdJbmQhc_xqCJPOjJcDRJapgG9bIXjj0XbrB6RpYXKI';
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-  let currentUser = null;
-  let allProducts = [];
-
-  async function checkAccess() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const isGuestAccess = urlParams.get('access') === 'guest';
-    const regionParam = urlParams.get('region');
-
-    if (regionParam) {
-      document.getElementById('regionSelect').value = regionParam;
-    }
-
-    // 1. Jika Akses Toko via Link Share
-    if (isGuestAccess) {
-      const salesName = urlParams.get('sales') || 'Official';
-      document.getElementById('welcomeMsg').innerText = `Katalog Digital Sherlock (${document.getElementById('regionSelect').value})`;
-      document.getElementById('subMsg').innerText = `Rekomendasi dari Sales: ${salesName}`;
-      updatePrintPdfLink();
-      loadProductsFromDatabase();
-      return; 
-    }
-
-    // 2. Jika Akses Sales / Admin
-    const savedUser = localStorage.getItem('sherlock_user');
-    if (!savedUser) {
-      window.location.href = 'login.html';
-      return;
-    }
-
-    currentUser = JSON.parse(savedUser);
-    
-    document.getElementById('btnShareToko').style.display = 'inline-flex';
-    document.getElementById('btnLogout').style.display = 'inline-flex';
-
-    if (currentUser.role === 'sales' && currentUser.region && currentUser.region !== 'All') {
-      if (!regionParam) {
-        document.getElementById('regionSelect').value = currentUser.region;
-      }
-    }
-
-    document.getElementById('welcomeMsg').innerText = `Selamat Datang, ${currentUser.name}!`;
-    document.getElementById('subMsg').innerText = `Wilayah Aktif: ${document.getElementById('regionSelect').value}`;
-    updatePrintPdfLink();
-    loadProductsFromDatabase();
+  .content { 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-around; 
+    gap: 12px; 
   }
 
-  // FETCH DATA PRODUK DARI SUPABASE
-  async function loadProductsFromDatabase() {
-    const container = document.getElementById('catalogContent');
-    
-    try {
-      const { data, error } = await supabaseClient
-        .from('products')
-        .select('*');
-
-      if (error) throw error;
-
-      allProducts = data || [];
-      renderCatalogCards();
-
-    } catch (err) {
-      console.error(err);
-      container.innerHTML = `
-        <div class="catalog-page">
-          <div class="loading-box" style="color:#dc3545;">
-            <h3>⚠️ Gagal memuat produk dari database</h3>
-            <p>${err.message}</p>
-          </div>
-        </div>`;
-    }
+  .section { 
+    display: grid; 
+    grid-template-columns: 48px 1fr; 
+    gap: 8px; 
+    transition: background-color 0.5s ease, transform 0.3s ease;
   }
-
-  // RENDER PRODUK KE DALAM KATALOG
-  function renderCatalogCards() {
-    const container = document.getElementById('catalogContent');
-    const selectedRegion = document.getElementById('regionSelect').value;
-    const priceColumn = `Harga ${selectedRegion}`;
-
-    if (allProducts.length === 0) {
-      container.innerHTML = `
-        <div class="catalog-page">
-          <div class="loading-box">
-            <h3>📦 Belum ada data produk di database.</h3>
-            <p>Silakan upload CSV via Admin Dashboard.</p>
-          </div>
-        </div>`;
-      return;
-    }
-
-    let html = '<div class="catalog-page"><div class="product-grid">';
-
-    allProducts.forEach(item => {
-      const title = item.Title || item.SKU || 'Produk Sherlock';
-      const sku = item.SKU || '-';
-      const imgUrl = item.Foto || 'https://via.placeholder.com/200?text=No+Image';
-      const priceVal = item[priceColumn] || item['Harga Jabodetabek'] || 0;
-      const formattedPrice = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(priceVal);
-
-      html += `
-        <div class="product-card">
-          <img src="${imgUrl}" alt="${title}" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
-          <div class="product-title">${title}</div>
-          <div class="product-sku">SKU: ${sku}</div>
-          <div class="product-price">${formattedPrice}</div>
-        </div>
-      `;
-    });
-
-    html += '</div></div>';
-    container.innerHTML = html;
-  }
-
-  function handleRegionChange() {
-    const selectedRegion = document.getElementById('regionSelect').value;
-    updatePrintPdfLink();
-    if (currentUser) {
-      document.getElementById('subMsg').innerText = `Wilayah Aktif: ${selectedRegion}`;
-    }
-    renderCatalogCards(); // Refresh harga sesuai wilayah yang dipilih
-  }
-
-  function updatePrintPdfLink() {
-    const currentRegion = document.getElementById('regionSelect').value;
-    document.getElementById('btnPrintPDF').href = `pdf.html?region=${encodeURIComponent(currentRegion)}`;
-  }
-
-  function handleShareToToko() {
-    const currentRegion = document.getElementById('regionSelect').value;
-    const salesName = currentUser ? currentUser.name : 'Sales';
-    const shareUrl = `${window.location.origin}/index.html?access=guest&sales=${encodeURIComponent(salesName)}&region=${encodeURIComponent(currentRegion)}`;
-
-    navigator.clipboard.writeText(shareUrl);
-    alert(`Link Katalog berhasil disalin!\n\nSales: ${salesName}\nWilayah: ${currentRegion}\n\nURL: ${shareUrl}\n\nSilakan kirimkan link ini ke WhatsApp Toko!`);
-  }
-
-  function handleLogout() {
-    localStorage.removeItem('sherlock_user');
-    window.location.href = 'login.html';
-  }
-
-  checkAccess();
-</script>
-</body>
-</html>
+  
+  .highlight-product {
+    background-color: #fff8bc !important;
+    outline:
