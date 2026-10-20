@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pendaftaran PIN - Katalog Sherlock</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .signup-card {
+    background: #1e1e1e;
+    padding: 30px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    border: 1px solid #333;
+  }
+  .signup-card h2 {
+    margin: 0 0 5px 0;
+    text-align: center;
+    color: #ffc400;
+    font-size: 22px;
+  }
+  .signup-card p {
+    text-align: center;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 20px;
+  }
+  .form-group { margin-bottom: 15px; }
+  label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #ddd; }
+  input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background: #2a2a2a;
+    color: #fff;
+    font-size: 14px;
+  }
+  input:focus { outline: none; border-color: #ffc400; }
+  .btn-submit {
+    width: 100%;
+    padding: 12px;
+    background: #ffc400;
+    color: #111;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .btn-submit:hover { background: #e0ac00; }
+  .status-msg {
+    margin-top: 15px;
+    padding: 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    display: none;
+    text-align: center;
+    font-weight: bold;
+  }
+  .status-error { background: #721c24; color: #f8d7da; }
+  .status-success { background: #155724; color: #d4edda; }
+  
+  .step-container { display: none; }
+  .step-container.active { display: block; }
+  
+  .login-link {
+    display: block;
+    text-align: center;
+    margin-top: 15px;
+    font-size: 12px;
+    color: #ffc400;
+    text-decoration: none;
+  }
+  .login-link:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="signup-card">
+  <h2>Aktivasi Akun Sales</h2>
+  <p>Daftarkan PIN untuk Email Terdaftar Anda</p>
+
+  <!-- STEP 1: VERIFIKASI EMAIL -->
+  <div id="step1" class="step-container active">
+    <form onsubmit="verifyEmail(event)">
+      <div class="form-group">
+        <label>Email Terdaftar:</label>
+        <input type="email" id="emailStep1" required placeholder="nama@gmail.com">
+      </div>
+      <button type="submit" id="btnVerify" class="btn-submit">Cek Email 🔍</button>
+    </form>
+  </div>
+
+  <!-- STEP 2: INPUT & KONFIRMASI PIN -->
+  <div id="step2" class="step-container">
+    <form onsubmit="savePin(event)">
+      <div class="form-group">
+        <label>Email Terverifikasi:</label>
+        <input type="email" id="emailStep2" readonly style="background:#111; color:#888;">
+      </div>
+
+      <div class="form-group">
+        <label>Buat PIN Baru (6 Angka):</label>
+        <input type="password" id="newPin" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••">
+      </div>
+
+      <div class="form-group">
+        <label>Konfirmasi PIN Baru:</label>
+        <input type="password" id="confirmPin" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" required placeholder="••••••">
+      </div>
+
+      <button type="submit" id="btnSavePin" class="btn-submit">Simpan PIN & Aktivasi 🔐</button>
+    </form>
+  </div>
+
+  <div id="statusMsg" class="status-msg"></div>
+
+  <a href="login.html" class="login-link">Sudah punya PIN? Masuk di sini ➔</a>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://yarudntqrnwljykieugl.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcnVkbnRxcm53bGp5a2lldWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTc1NTIsImV4cCI6MjEwNzE3MzU1Mn0.cdJbmQhc_xqCJPOjJcDRJapgG9bIXjj0XbrB6RpYXKI';
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let verifiedUser = null;
+
+  // STEP 1: CEK EMAIL DI DATABASE
+  async function verifyEmail(e) {
+    e.preventDefault();
+    const emailInput = document.getElementById('emailStep1').value.trim().toLowerCase();
+    const btn = document.getElementById('btnVerify');
+    const statusEl = document.getElementById('statusMsg');
+
+    btn.disabled = true;
+    btn.innerText = 'Mengecek Email...';
+    statusEl.style.display = 'none';
+
+    try {
+      // Cari Email di tabel 'users'
+      const { data, error } = await supabaseClient
+        .from('users')
+        .select('*')
+        .eq('email', emailInput)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        throw new Error('Email Anda tidak terdaftar! Silakan hubungi Admin untuk didaftarkan.');
+      }
+
+      // Cek apakah user sudah punya PIN sebelumnya
+      if (data.pin && data.pin.trim() !== '') {
+        throw new Error('Email ini sudah terdaftar & memiliki PIN. Silakan langsung Login.');
+      }
+
+      // Jika Email ditemukan & PIN masih kosong -> Lanjut ke Step 2
+      verifiedUser = data;
+      document.getElementById('emailStep2').value = data.email;
+      
+      document.getElementById('step1').classList.remove('active');
+      document.getElementById('step2').classList.add('active');
+
+      statusEl.className = 'status-msg status-success';
+      statusEl.style.display = 'block';
+      statusEl.innerText = `Email terverifikasi! Halo ${data.name}, silakan buat PIN Anda.`;
+
+    } catch (err) {
+      statusEl.className = 'status-msg status-error';
+      statusEl.style.display = 'block';
+      statusEl.innerText = err.message;
+      btn.disabled = false;
+      btn.innerText = 'Cek Email 🔍';
+    }
+  }
+
+  // STEP 2: UPDATE PIN KE DATABASE
+  async function savePin(e) {
+    e.preventDefault();
+    const newPin = document.getElementById('newPin').value.trim();
+    const confirmPin = document.getElementById('confirmPin').value.trim();
+    const btn = document.getElementById('btnSavePin');
+    const statusEl = document.getElementById('statusMsg');
+
+    if (newPin !== confirmPin) {
+      statusEl.className = 'status-msg status-error';
+      statusEl.style.display = 'block';
+      statusEl.innerText = 'PIN dan Konfirmasi PIN tidak cocok!';
+      return;
+    }
+
+    if (newPin.length !== 6) {
+      statusEl.className = 'status-msg status-error';
+      statusEl.style.display = 'block';
+      statusEl.innerText = 'PIN harus terdiri dari 6 angka!';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = 'Menyimpan PIN...';
+
+    try {
+      // Update PIN di database
+      const { error } = await supabaseClient
+        .from('users')
+        .update({ pin: newPin })
+        .eq('id', verifiedUser.id);
+
+      if (error) throw error;
+
+      statusEl.className = 'status-msg status-success';
+      statusEl.style.display = 'block';
+      statusEl.innerText = 'PIN Berhasil Dibuat! Mengalihkan ke halaman login...';
+
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 2000);
+
+    } catch (err) {
+      statusEl.className = 'status-msg status-error';
+      statusEl.style.display = 'block';
+      statusEl.innerText = 'Gagal menyimpan PIN: ' + err.message;
+      btn.disabled = false;
+      btn.innerText = 'Simpan PIN & Aktivasi 🔐';
+    }
+  }
+</script>
+</body>
+</html>
