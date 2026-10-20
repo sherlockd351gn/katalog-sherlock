@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Katalog Digital Sherlock</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    background: #111;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+  }
+  .login-card {
+    background: #1e1e1e;
+    padding: 30px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 360px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    border: 1px solid #333;
+  }
+  .login-card h2 {
+    margin: 0 0 5px 0;
+    text-align: center;
+    color: #ffc400;
+    font-size: 22px;
+  }
+  .login-card p {
+    text-align: center;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 20px;
+  }
+  .form-group { margin-bottom: 15px; }
+  label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 5px; color: #ddd; }
+  input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background: #2a2a2a;
+    color: #fff;
+    font-size: 14px;
+  }
+  input:focus { outline: none; border-color: #ffc400; }
+  .btn-login {
+    width: 100%;
+    padding: 12px;
+    background: #ffc400;
+    color: #111;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .btn-login:hover { background: #e0ac00; }
+  .error-msg {
+    margin-top: 15px;
+    padding: 10px;
+    background: #721c24;
+    color: #f8d7da;
+    font-size: 12px;
+    border-radius: 4px;
+    display: none;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <h2>Sherlock Tools</h2>
+  <p>Silakan masuk untuk mengakses katalog</p>
+
+  <form onsubmit="handleLogin(event)">
+    <div class="form-group">
+      <label>Email / ID Akun:</label>
+      <input type="email" id="email" required placeholder="nama@sherlock.com">
+    </div>
+
+    <div class="form-group">
+      <label>Password:</label>
+      <input type="password" id="password" required placeholder="••••••••">
+    </div>
+
+    <button type="submit" id="btnLogin" class="btn-login">Masuk Akun 🔑</button>
+  </form>
+
+  <div id="errorMsg" class="error-msg"></div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://yarudntqrnwljykieugl.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcnVkbnRxcm53bGp5a2lldWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTc1NTIsImV4cCI6MjEwNzE3MzU1Mn0.cdJbmQhc_xqCJPOjJcDRJapgG9bIXjj0XbrB6RpYXKI';
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function handleLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const btn = document.getElementById('btnLogin');
+    const errorEl = document.getElementById('errorMsg');
+
+    btn.disabled = true;
+    btn.innerText = 'Memverifikasi...';
+    errorEl.style.display = 'none';
+
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
+
+      if (error) throw error;
+
+      // Cek Role Pengguna dari User Metadata di Supabase Auth
+      const userRole = data.user.user_metadata?.role || 'sales';
+
+      if (userRole === 'admin') {
+        window.location.href = 'admin-katalog.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+
+    } catch (err) {
+      errorEl.style.display = 'block';
+      errorEl.innerText = 'Gagal Login: Email atau Password salah.';
+      btn.disabled = false;
+      btn.innerText = 'Masuk Akun 🔑';
+    }
+  }
+</script>
+</body>
+</html>
