@@ -622,6 +622,17 @@
     const selectEl = document.getElementById('regionSelect');
     if (selectEl) {
       selectEl.value = activeRegion;
+
+      // ATURAN PENGUNCIAN WILAYAH:
+      if (urlParams.get('access') === 'guest') {
+        selectEl.disabled = true;
+      } 
+      else if (currentUser && currentUser.role === 'sales' && currentUser.region && currentUser.region !== 'All') {
+        selectEl.disabled = true;
+      } 
+      else {
+        selectEl.disabled = false;
+      }
     }
 
     fetchCatalogFromSupabase(activeRegion);
