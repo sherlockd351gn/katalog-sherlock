@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Dashboard - Katalog Sherlock</title>
 
-<!-- Supabase Client & PapaParse untuk CSV -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
 
@@ -16,10 +15,9 @@
     margin: 0;
     padding: 0;
     background: #e0e0e0;
-    overflow: hidden; /* Mencegah double scrollbar */
+    overflow: hidden;
   }
 
-  /* BAR NAVIGASI ADMIN ATAS */
   .admin-navbar {
     background: #111;
     color: #fff;
@@ -62,14 +60,12 @@
   .btn-red { background: #dc3545; color: #fff; }
   .btn-red:hover { background: #bd2130; }
 
-  /* CONTAINER IFRAME KATALOG */
   .catalog-frame {
     width: 100%;
     height: calc(100vh - 55px);
     border: none;
   }
 
-  /* MODAL POP-UP UNTUK UPLOAD */
   .modal-overlay {
     position: fixed;
     top: 0; left: 0; width: 100%; height: 100%;
@@ -112,7 +108,6 @@
 </head>
 <body>
 
-<!-- NAVBAR UTAMA ADMIN -->
 <div class="admin-navbar">
   <div class="brand-title">
     ⚙️ Mode Admin Katalog
@@ -125,10 +120,8 @@
   </div>
 </div>
 
-<!-- TAMPILAN KATALOG UTAMA (DIANGKUT DARI INDEX.HTML) -->
 <iframe id="catalogIframe" src="index.html?access=guest" class="catalog-frame"></iframe>
 
-<!-- MODAL 1: UPLOAD CSV -->
 <div id="modalCSV" class="modal-overlay">
   <div class="modal-card">
     <span class="close-btn" onclick="closeModal('modalCSV')">&times;</span>
@@ -143,7 +136,6 @@
   </div>
 </div>
 
-<!-- MODAL 2: UPLOAD FOTO CARD -->
 <div id="modalFoto" class="modal-overlay">
   <div class="modal-card">
     <span class="close-btn" onclick="closeModal('modalFoto')">&times;</span>
@@ -175,7 +167,6 @@
 
   var parsedCSVData = [];
 
-  // 1. CEK OTORISASI AKUN ADMIN
   function checkAdminAuth() {
     const savedUser = localStorage.getItem('sherlock_user');
     if (!savedUser) {
@@ -189,7 +180,6 @@
     }
   }
 
-  // 2. MODAL CONTROLLER
   function openModal(id) {
     document.getElementById(id).style.display = 'flex';
     if (id === 'modalFoto') loadEmptyTitles();
@@ -198,7 +188,6 @@
     document.getElementById(id).style.display = 'none';
   }
 
-  // 3. LOGIKA UPLOAD CSV
   function handleCSVSelect() {
     const file = document.getElementById('csvFileInput').files[0];
     if (!file) return;
@@ -227,7 +216,7 @@
       statusEl.innerText = 'Berhasil mengunggah ' + parsedCSVData.length + ' produk!';
       setTimeout(() => {
         closeModal('modalCSV');
-        refreshCatalogFrame(); // Refresh iframe katalog secara langsung
+        refreshCatalogFrame();
       }, 1500);
 
     } catch (err) {
@@ -236,7 +225,6 @@
     }
   }
 
-  // 4. LOGIKA UPLOAD FOTO TITLE CARD
   async function loadEmptyTitles() {
     const selectEl = document.getElementById('titleSelect');
     selectEl.innerHTML = '<option value="">-- Memuat data... --</option>';
@@ -301,7 +289,7 @@
       statusEl.innerText = 'Berhasil memperbarui foto untuk Title ' + selectedTitle;
       setTimeout(() => {
         closeModal('modalFoto');
-        refreshCatalogFrame(); // Refresh iframe katalog secara langsung
+        refreshCatalogFrame();
       }, 1500);
 
     } catch (err) {
@@ -310,10 +298,9 @@
     }
   }
 
-  // REFRESH IFRAME KATALOG SETELAH UPLOAD
   function refreshCatalogFrame() {
     const iframe = document.getElementById('catalogIframe');
-    iframe.src = iframe.src; // Reload iframe
+    iframe.src = iframe.src;
   }
 
   function handleLogout() {
@@ -321,7 +308,6 @@
     window.location.href = 'login.html';
   }
 
-  // Inisialisasi
   checkAdminAuth();
 </script>
 </body>
