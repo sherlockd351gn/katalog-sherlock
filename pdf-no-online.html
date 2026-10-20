@@ -3,531 +3,97 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cetak Katalog Produk Sherlock</title>
-
+<title>Cetak Katalog A4 (Tanpa Harga Online) - Sherlock</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  /* ATURAN UTAMA KERTAS A4 UNTUK MESIN PRINT / PDF */
-  @page {
-    size: A4 portrait;
-    margin: 0; /* Menghilangkan margin bawaan browser agar layout presisi */
-  }
-
-  * { 
-    box-sizing: border-box; 
-  }
-
-  html, body {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-    background: #525659;
-    font-family: Arial, sans-serif;
-    color: #111;
-  }
-
+  * { box-sizing: border-box; }
   body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    font-family: Arial, sans-serif;
+    background: #525659;
+    margin: 0;
     padding: 20px 0;
   }
 
-  /* TOMBOL CETAK MELAYANG */
-  .floating-print-btn {
+  .print-actions-container {
     position: fixed;
     top: 20px;
     right: 20px;
-    z-index: 9999;
-    padding: 12px 24px;
-    font-size: 14px;
-    font-weight: bold;
-    color: #fff;
-    background: #00a651;
-    border: none;
-    border-radius: 50px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    cursor: pointer;
-    transition: transform 0.2s, background 0.2s;
-  }
-
-  .floating-print-btn:hover {
-    background: #008540;
-    transform: scale(1.05);
-  }
-
-  #pdf-container {
-    width: 100%;
     display: flex;
-    flex-direction: column;
+    gap: 10px;
+    z-index: 9999;
+  }
+
+  .btn-action {
+    padding: 10px 18px;
+    font-weight: bold;
+    font-size: 13px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    color: #fff;
+    display: inline-flex;
     align-items: center;
-    gap: 20px;
+    gap: 6px;
+  }
+  .btn-share { background: #007bff; }
+  .btn-share:hover { background: #0056b3; }
+  .btn-print { background: #00a651; }
+  .btn-print:hover { background: #008540; }
+
+  .a4-page {
+    width: 210mm;
+    min-height: 297mm;
+    padding: 15mm;
+    margin: 0 auto 20px auto;
+    background: #fff;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
   }
 
-  /* WADAH UTAMA HALAMAN A4 STRICT */
-  .page { 
-    width: 210mm; 
-    height: 297mm;        /* Kunci tinggi tepat 297mm (A4 Standar) */
-    max-height: 297mm;    /* Mencegah konten meluap keluar halaman */
-    background: #fff; 
-    padding: 8mm 8mm 6mm 8mm; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: space-between; 
-    box-sizing: border-box;
-    page-break-after: always;
-    break-after: page;
-    page-break-inside: avoid;
-    break-inside: avoid;
-    overflow: hidden;    /* Potong elemen yang memaksa keluar batas halaman */
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  }
-
-  .header { 
-    padding-bottom: 4px; 
-    border-bottom: 2px solid #111; 
-    margin-bottom: 6px; 
-  }
-  .header h1 { 
-    margin: 0; 
-    font-size: 20px; 
-    font-weight: 800; 
-    text-transform: uppercase; 
-    letter-spacing: 0.5px;
-  }
-  .header .subtitle { 
-    margin-top: 2px; 
-    font-size: 10.5px; 
-    font-style: italic; 
-    font-weight: bold; 
-    color: #333; 
-  }
-  
-  .content { 
-    flex: 1; 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: flex-start;
-    gap: 8px; 
-  }
-
-  .section { 
-    display: grid; 
-    grid-template-columns: 48px 1fr; 
-    gap: 8px; 
-  }
-
-  .side-label { 
-    display: flex; 
-    flex-direction: column; 
-  }
-
-  .side-label .tag { 
-    background: #ffc400 !important; 
-    color: #111 !important;
-    min-height: 38px; 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    font-size: 8.5px; 
-    font-weight: 800; 
-    text-align: center; 
-    padding: 2px; 
-    text-transform: uppercase; 
-    border-radius: 2px 2px 0 0;
-  }
-
-  .side-label .vertical { 
-    flex: 1; 
-    background: #fff3cc !important; 
-    color: #111 !important;
-    writing-mode: vertical-rl; 
-    text-orientation: mixed;
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    font-size: 11px; 
-    font-weight: 800; 
-    letter-spacing: 1px; 
-    text-align: center; 
-    text-transform: uppercase; 
-    padding: 6px 0;
-    border-radius: 0 0 2px 2px;
-  }
-  
-  .product-panel { 
-    display: grid; 
-    grid-template-columns: 200px 1fr; 
-    grid-template-rows: auto 1fr; 
-    gap: 8px; 
-  }
-  
-  .card-brand { 
-    padding: 4px; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    justify-content: center; 
-    text-align: center; 
-    font-size: 14px; 
-    font-weight: 800; 
-    background: #ffffff !important;
-    border-radius: 4px;
-  }
-  .card-brand img { 
-    max-width: 100%; 
-    max-height: 45px; 
-    object-fit: contain; 
-    background: #ffffff !important;
-  }
-  .card-brand small { 
-    display: block; 
-    font-size: 7.5px; 
-    font-weight: 700; 
-    margin-top: 1px; 
-  }
-  
-  .card-title { 
-    padding: 2px 0; 
-    display: flex; 
-    align-items: center; 
-  }
-  .card-title h2 { 
-    margin: 0; 
-    font-size: 16px; 
-    font-weight: 800; 
-    text-transform: uppercase; 
-  }
-  
-  .card-photo { 
-    display: flex; 
-    align-items: center; 
-    justify-content: center; 
-    width: 100%;
-    height: 100%;
-    padding: 4px; 
-    background: #fafafa; 
-    overflow: hidden;
-  }
-
-  .card-photo img { 
-    width: auto; 
-    height: auto; 
-    max-width: 100%; 
-    max-height: 100%; 
-    object-fit: contain; 
-  }
-  
-  .card-table-container { 
-    display: flex; 
-    flex-direction: column; 
-    justify-content: flex-start;
-    position: relative; 
-    overflow-x: auto;
-  }
-  .unit-tag { 
-    align-self: flex-end; 
-    padding: 1px 4px; 
-    font-size: 8.5px; 
-    font-weight: 800; 
-    background: #fff; 
-    margin-bottom: 3px; 
-  }
-  
-  table { 
-    width: 100%; 
-    border-collapse: collapse; 
-    table-layout: fixed; 
-    font-size: 9px; 
-  }
-  th, td { 
-    border: 1px solid #111; 
-    padding: 2.5px 2px; 
-    text-align: center; 
-    vertical-align: middle; 
-  }
-  th { 
-    background: #a6a6a6 !important; 
-    color: #000 !important; 
-    font-weight: 800; 
-  }
-  th.price-head { 
-    background: #2522db !important; 
-    color: #fff !important; 
-  }
-  th.online-head { 
-    background: #00a651 !important; 
-    color: #fff !important; 
-  }
-  td { font-weight: 700; }
-  td.price-cell { 
-    color: #2522db !important; 
-    text-align: right; 
-  }
-  td.online-cell { 
-    color: #00a651 !important; 
-    text-align: right; 
-  }
-  
-  .footer { 
-    height: 38px; 
-    background: #ffc400 !important; 
-    margin-top: 6px; 
-    display: grid; 
-    grid-template-columns: 40px 1fr 140px; 
-    align-items: center; 
-    padding: 0 10px; 
-    font-size: 8.5px; 
-    font-weight: 700; 
-  }
-  .page-number { font-size: 22px; }
-  .phone { text-align: center; line-height: 1.2; }
-  .fax { text-align: right; }
-
-  /* KHUSUS PEMBUATAN PDF ATAU SAAT CETAK BROWSER */
   @media print {
-    body {
-      background: #fff;
-      padding: 0;
-      margin: 0;
-    }
-    .floating-print-btn {
-      display: none !important;
-    }
-    #pdf-container {
-      gap: 0;
-    }
-    .page {
-      box-shadow: none;
-      margin: 0;
-      width: 210mm;
-      height: 297mm;
-      max-height: 297mm;
-      page-break-after: always;
-      break-after: page;
-    }
+    body { background: none; padding: 0; }
+    .print-actions-container { display: none !important; }
+    .a4-page { box-shadow: none; margin: 0; width: 100%; }
   }
 </style>
 </head>
 <body>
 
-<button class="floating-print-btn" onclick="window.print()">🖨️ Cetak / Simpan PDF</button>
+<div class="print-actions-container">
+  <button onclick="handleShareToToko()" class="btn-action btn-share">🔗 Bagikan ke Toko</button>
+  <button onclick="window.print()" class="btn-action btn-print">🖨️ Cetak / Simpan PDF</button>
+</div>
 
-<div id="pdf-container"></div>
+<div class="a4-page">
+  <h2 id="pdfTitle" style="text-transform: uppercase;">PERLENGKAPAN KEAMANAN</h2>
+  <p id="pdfSubtitle" style="font-size: 12px; color: #555; font-style: italic;">Harga Area Jabodetabek 2026 (Offline Store Only)</p>
+  <hr style="border: 1px solid #111; margin-bottom: 20px;">
+  
+  <p style="text-align: center; color: #888; margin-top: 100px;">[ Konten Lengkap Katalog A4 Tanpa Kolom Online Tampil Di Sini ]</p>
+</div>
 
 <script>
-  const SUPABASE_URL = 'https://yarudntqrnwljykieugl.supabase.co'; 
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcnVkbnRxcm53bGp5a2lldWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTc1NTIsImV4cCI6MjEwNzE3MzU1Mn0.cdJbmQhc_xqCJPOjJcDRJapgG9bIXjj0XbrB6RpYXKI';
-
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  const urlParams = new URLSearchParams(window.location.search);
-  const selectedRegion = urlParams.get('region') || 'Jabodetabek';
-  const printMode = 'no-online'; // 'full' ATAU 'no-online'
-
-  async function startPdfProcess() {
-    try {
-      let allData = [];
-      let from = 0;
-      const step = 1000;
-      let keepFetching = true;
-
-      while (keepFetching) {
-        const { data, error } = await supabaseClient
-          .from('products')
-          .select('*')
-          .range(from, from + step - 1);
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          allData = allData.concat(data);
-          if (data.length < step) {
-            keepFetching = false;
-          } else {
-            from += step;
-          }
-        } else {
-          keepFetching = false;
-        }
-      }
-
-      const processedPages = processSupabaseData(allData);
-      renderPdfHTML(processedPages, selectedRegion, printMode);
-
-    } catch (err) {
-      console.error(err);
-      alert('Gagal memproses data: ' + err.message);
-    }
+  function initPdfView() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const region = urlParams.get('region') || 'Jabodetabek';
+    document.getElementById('pdfSubtitle').innerText = `Harga Area ${region} 2026 (Offline Store Only)`;
   }
 
-  function processSupabaseData(rawData) {
-    var pages = {};
-    rawData.forEach(function(row) {
-      var rawPage = row['Page'];
-      if (rawPage === null || rawPage === undefined || String(rawPage).trim() === '') return;
-      var pageNum = String(rawPage).trim();
+  function handleShareToToko() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const currentRegion = urlParams.get('region') || 'Jabodetabek';
+    
+    const savedUser = localStorage.getItem('sherlock_user');
+    const salesName = savedUser ? JSON.parse(savedUser).name : 'Sales';
 
-      var cardOrder = parseInt(row['Urutan Card']) || 99;
-      var sku = row['SKU'] || '';
-      var masterCategory = row['Master Kategori'] || '';
-      var category = row['Kategori'] || '';
-      var subCategory = row['Sub Kategori'] || '';
-      var brand = row['Brand'] || '';
-      var title = row['Title'] || '';
-      var type = row['Type'] || '';
-      var size = row['Size'] || '';
-      var photo = row['Foto'] || '';
-      var uom = row['UOM'] || 'Pcs';
+    const shareUrl = `${window.location.origin}/index.html?access=guest&sales=${encodeURIComponent(salesName)}&region=${encodeURIComponent(currentRegion)}`;
 
-      var prices = {
-        'Jabodetabek': { price: formatRp(row['Harga Jabodetabek']), priceOnline: formatRp(row['Harga Online Jabodetabek']) },
-        'Jawa':        { price: formatRp(row['Harga Jawa']), priceOnline: formatRp(row['Harga Online Jawa']) },
-        'Sumatra':     { price: formatRp(row['Harga Sumatra']), priceOnline: formatRp(row['Harga Online Sumatra']) },
-        'Luar Jawa':   { price: formatRp(row['Harga Luar Jawa']), priceOnline: formatRp(row['Harga Online Luar Jawa']) }
-      };
-
-      if (!pages[pageNum]) pages[pageNum] = {};
-
-      var productKey = pageNum + '_' + cardOrder + '_' + subCategory + '_' + title + '_' + brand;
-      if (!pages[pageNum][productKey]) {
-        pages[pageNum][productKey] = {
-          title: title, brand: brand, masterCategory: masterCategory,
-          category: category, subCategory: subCategory, photo: photo,
-          uom: uom, cardOrder: cardOrder, items: []
-        };
-      }
-
-      pages[pageNum][productKey].items.push({ sku: sku, type: type, size: size, prices: prices });
-    });
-
-    var structuredPages = {};
-    var sortedPageKeys = Object.keys(pages).sort(function(a, b) {
-      var numA = parseInt(a.replace(/\D/g, '')) || 0;
-      var numB = parseInt(b.replace(/\D/g, '')) || 0;
-      return numA - numB;
-    });
-
-    sortedPageKeys.forEach(function(p) {
-      var productsArray = Object.keys(pages[p]).map(function(k) { return pages[p][k]; });
-      productsArray.sort(function(a, b) { return a.cardOrder - b.cardOrder; });
-      structuredPages[p] = productsArray;
-    });
-
-    return structuredPages;
+    navigator.clipboard.writeText(shareUrl);
+    alert(`Link Katalog berhasil disalin!\n\nSales: ${salesName}\nWilayah: ${currentRegion}\n\nURL: ${shareUrl}\n\nSilakan kirimkan link ini ke WhatsApp Toko!`);
   }
 
-  function formatRp(val) {
-    if (typeof val === 'number') return 'Rp ' + val.toLocaleString('id-ID');
-    if (!val) return 'Rp 0';
-    if (typeof val === 'string' && val.startsWith('Rp')) return val;
-    return 'Rp ' + val;
-  }
-
-  function renderPdfHTML(pagesData, region, mode) {
-    var container = document.getElementById('pdf-container');
-    container.innerHTML = '';
-    var pageKeys = Object.keys(pagesData);
-
-    var hideOnline = (mode === 'no-online');
-
-    pageKeys.forEach(function(pageNum) {
-      var productsList = pagesData[pageNum];
-
-      var pageDiv = document.createElement('main');
-      pageDiv.className = 'page';
-      var masterCategoryText = (productsList.length > 0 && productsList[0].masterCategory) 
-        ? productsList[0].masterCategory 
-        : 'PERLENGKAPAN KEAMANAN';
-
-      var contentHTML = `
-        <div>
-          <header class="header">
-            <h1>${masterCategoryText}</h1>
-            <div class="subtitle">Harga Area ${region} 2026</div>
-          </header>
-          <div class="content">`;
-
-      productsList.forEach(function(prod) {
-        var rowsHTML = '';
-        prod.items.forEach(function(item) {
-          var priceObj = item.prices[region] || { price: 'Rp 0', priceOnline: 'Rp 0' };
-          
-          rowsHTML += `
-            <tr>
-              <td>${item.sku}</td>
-              <td>${item.type}</td>
-              <td>${item.size}</td>
-              <td class="price-cell">${priceObj.price}</td>
-              ${hideOnline ? '' : `<td class="online-cell">${priceObj.priceOnline}</td>`}
-            </tr>`;
-        });
-
-        var photoHTML = (prod.photo && typeof prod.photo === 'string' && prod.photo.startsWith('http'))
-          ? `<img src="${prod.photo}" alt="Foto">` 
-          : '<div style="color:#aaa;font-size:10px;font-weight:bold;">FOTO PRODUK</div>';
-
-        var brandHTML = (prod.brand && typeof prod.brand === 'string' && prod.brand.startsWith('http'))
-          ? `<img src="${prod.brand}" alt="Brand">` 
-          : `◈ ${prod.brand || 'SHERLOCK'}<small>British Standard Tools</small>`;
-
-        var tableHeadHTML = hideOnline ? `
-          <thead>
-            <tr>
-              <th style="width: 35%;">SKU Number</th>
-              <th style="width: 25%;">Type</th>
-              <th style="width: 15%;">Size</th>
-              <th class="price-head" style="width: 25%;">Harga (Rp)</th>
-            </tr>
-          </thead>
-        ` : `
-          <thead>
-            <tr>
-              <th style="width: 28%;">SKU Number</th>
-              <th style="width: 17%;">Type</th>
-              <th style="width: 15%;">Size</th>
-              <th class="price-head" style="width: 20%;">Harga (Rp)</th>
-              <th class="online-head" style="width: 20%;">Harga Online<br>Terendah</th>
-            </tr>
-          </thead>
-        `;
-
-        contentHTML += `
-          <section class="section">
-            <aside class="side-label">
-              <div class="tag">${prod.subCategory}</div>
-              <div class="vertical">${prod.category}</div>
-            </aside>
-            <div class="product-panel">
-              <div class="card-brand">${brandHTML}</div>
-              <div class="card-title"><h2>${prod.title}</h2></div>
-              <div class="card-photo">${photoHTML}</div>
-              <div class="card-table-container">
-                <div class="unit-tag">UOM: ${prod.uom}</div>
-                <table>
-                  ${tableHeadHTML}
-                  <tbody>${rowsHTML}</tbody>
-                </table>
-              </div>
-            </div>
-          </section>`;
-      });
-
-      contentHTML += `
-          </div>
-        </div>
-        <footer class="footer">
-          <div class="page-number">${pageNum}</div>
-          <div class="phone">☎ : (021) 2906 2017 / 2906 2018<br>0812 8703 0377 / 0822 9956 5272</div>
-          <div class="fax">▣ : (021) 2906 2019</div>
-        </footer>`;
-
-      pageDiv.innerHTML = contentHTML;
-      container.appendChild(pageDiv);
-    });
-  }
-
-  startPdfProcess();
+  initPdfView();
 </script>
 </body>
 </html>
