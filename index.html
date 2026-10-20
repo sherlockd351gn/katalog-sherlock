@@ -572,6 +572,62 @@
 </div>
 
 <script>
+ // Cek Status Akses saat index.html dibuka
+function checkAccess() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const isGuestAccess = urlParams.get('access') === 'guest';
+
+  // 1. Jika dibuka oleh Toko via Link Share (?access=guest)
+  if (isGuestAccess) {
+    const defaultRegion = urlParams.get('region') || 'Jabodetabek';
+    console.log("Akses Toko disetujui untuk wilayah: " + defaultRegion);
+    
+    // Setel otomatis dropdown wilayah katalog ke wilayah terkait
+    if (document.getElementById('regionSelect')) {
+      document.getElementById('regionSelect').value = defaultRegion;
+    }
+    return; // Izinkan Toko melihat tanpa login
+  }
+
+  // 2. Jika dibuka biasa oleh Sales/Admin (Cek Session di LocalStorage)
+  const savedUser = localStorage.getItem('sherlock_user');
+  if (!savedUser) {
+    window.location.href = 'login.html'; // Belum login -> balik ke login.html
+    return;
+  }
+
+  const user = JSON.parse(savedUser);
+
+  // Jika Sales membuka, otomatis setel wilayah sesuai yang terdaftar di DB
+  if (user.role === 'sales' && user.region !== 'All') {
+    if (document.getElementById('regionSelect')) {
+      document.getElementById('regionSelect').value = user.region;
+    }
+  }
+
+  // Tampilkan Tombol "Bagikan ke Toko" khusus Sales/Admin yang login
+  renderShareButton(user);
+}
+
+function renderShareButton(user) {
+  const shareBtn = document.createElement('button');
+  shareBtn.style.cssText = 'background:#00a651; color:#fff; border:none; padding:8px 12px; font-weight:bold; border-radius:4px; cursor:pointer; margin-left:10px;';
+  shareBtn.innerHTML = '🔗 Bagikan Katalog ke Toko';
+
+  shareBtn.onclick = function() {
+    const currentRegion = document.getElementById('regionSelect')?.value || user.region || 'Jabodetabek';
+    const shareUrl = `${window.location.origin}${window.location.pathname}?access=guest&sales=${encodeURIComponent(user.name)}&region=${encodeURIComponent(currentRegion)}`;
+    
+    navigator.clipboard.writeText(shareUrl);
+    alert(`Link Katalog untuk Toko berhasil disalin!\n\nWilayah: ${currentRegion}\nSales: ${user.name}\n\nSilakan kirimkan link ini ke WhatsApp Toko!`);
+  };
+
+  const container = document.querySelector('.navbar') || document.body;
+  container.appendChild(shareBtn);
+}
+
+// Jalankan saat load
+checkAccess();
   const SUPABASE_URL = 'https://yarudntqrnwljykieugl.supabase.co'; 
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcnVkbnRxcm53bGp5a2lldWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTc1NTIsImV4cCI6MjEwNzE3MzU1Mn0.cdJbmQhc_xqCJPOjJcDRJapgG9bIXjj0XbrB6RpYXKI';
 
