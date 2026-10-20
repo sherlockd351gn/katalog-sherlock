@@ -3,8 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - Katalog Digital Sherlock</title>
+<title>Login - Katalog Sherlock</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
   * { box-sizing: border-box; }
   body {
@@ -79,20 +80,20 @@
 
 <div class="login-card">
   <h2>Sherlock Tools</h2>
-  <p>Silakan masuk untuk mengakses katalog</p>
+  <p>Masukkan Email Terdaftar & PIN</p>
 
   <form onsubmit="handleLogin(event)">
     <div class="form-group">
-      <label>Email / ID Akun:</label>
-      <input type="email" id="email" required placeholder="nama@sherlock.com">
+      <label>Email Sales / Admin:</label>
+      <input type="email" id="email" required placeholder="nama@gmail.com">
     </div>
 
     <div class="form-group">
-      <label>Password:</label>
-      <input type="password" id="password" required placeholder="••••••••">
+      <label>PIN (Angka):</label>
+      <input type="password" id="pin" maxlength="6" pattern="[0-9]*" inputmode="numeric" required placeholder="••••••">
     </div>
 
-    <button type="submit" id="btnLogin" class="btn-login">Masuk Akun 🔑</button>
+    <button type="submit" id="btnLogin" class="btn-login">Masuk Katalog 🔑</button>
   </form>
 
   <div id="errorMsg" class="error-msg"></div>
@@ -105,8 +106,8 @@
 
   async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+    const emailInput = document.getElementById('email').value.trim().toLowerCase();
+    const pinInput = document.getElementById('pin').value.trim();
     const btn = document.getElementById('btnLogin');
     const errorEl = document.getElementById('errorMsg');
 
@@ -115,17 +116,29 @@
     errorEl.style.display = 'none';
 
     try {
-      const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
+      // Cek ke tabel 'users' berdasarkan Email & PIN
+      const { data, error } = await supabaseClient
+        .from('users')
+        .select('*')
+        .eq('email', emailInput)
+        .eq('pin', pinInput)
+        .single();
 
-      if (error) throw error;
+      if (error || !data) {
+        throw new Error('Email atau PIN tidak terdaftar!');
+      }
 
-      // Cek Role Pengguna dari User Metadata di Supabase Auth
-      const userRole = data.user.user_metadata?.role || 'sales';
+      // Simpan data login sales/admin di localStorage HP/Browser
+      localStorage.setItem('sherlock_user', JSON.stringify({
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        region: data.region
+      }));
 
-      if (userRole === 'admin') {
+      // Redirect berdasarkan Role
+      if (data.role === 'admin') {
         window.location.href = 'admin-katalog.html';
       } else {
         window.location.href = 'index.html';
@@ -133,9 +146,9 @@
 
     } catch (err) {
       errorEl.style.display = 'block';
-      errorEl.innerText = 'Gagal Login: Email atau Password salah.';
+      errorEl.innerText = err.message || 'Gagal Login. Periksa kembali Email & PIN.';
       btn.disabled = false;
-      btn.innerText = 'Masuk Akun 🔑';
+      btn.innerText = 'Masuk Katalog 🔑';
     }
   }
 </script>
