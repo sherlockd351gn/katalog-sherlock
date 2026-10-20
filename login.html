@@ -97,6 +97,9 @@
   </form>
 
   <div id="errorMsg" class="error-msg"></div>
+ <a href="signup.html" style="display: block; text-align: center; margin-top: 15px; font-size: 12px; color: #ffc400; text-decoration: none;">
+  Belum punya PIN / Sales Baru? Buat PIN di sini ➔
+</a>
 </div>
 
 <script>
@@ -116,7 +119,6 @@
     errorEl.style.display = 'none';
 
     try {
-      // Cek ke tabel 'users' berdasarkan Email & PIN
       const { data, error } = await supabaseClient
         .from('users')
         .select('*')
@@ -128,7 +130,6 @@
         throw new Error('Email atau PIN tidak terdaftar!');
       }
 
-      // Simpan data login sales/admin di localStorage HP/Browser
       localStorage.setItem('sherlock_user', JSON.stringify({
         id: data.id,
         name: data.name,
@@ -137,11 +138,11 @@
         region: data.region
       }));
 
-      // Redirect berdasarkan Role
       if (data.role === 'admin') {
         window.location.href = 'admin-katalog.html';
       } else {
-        window.location.href = 'index.html';
+        const userRegion = data.region || 'Jabodetabek';
+        window.location.href = `index.html?region=${encodeURIComponent(userRegion)}`;
       }
 
     } catch (err) {
