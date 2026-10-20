@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Katalog Sherlock - Mode Admin</title>
+<title>Admin Dashboard - Katalog Sherlock</title>
 
 <!-- Supabase Client & PapaParse untuk CSV -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -13,28 +13,26 @@
   * { box-sizing: border-box; }
   body {
     font-family: Arial, sans-serif;
-    background: #e0e0e0;
     margin: 0;
     padding: 0;
-    color: #333;
+    background: #e0e0e0;
+    overflow: hidden; /* Mencegah double scrollbar */
   }
 
   /* BAR NAVIGASI ADMIN ATAS */
   .admin-navbar {
     background: #111;
     color: #fff;
-    padding: 12px 20px;
+    padding: 10px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+    height: 55px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   }
 
   .admin-navbar .brand-title {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
     color: #ffc400;
     display: flex;
@@ -48,8 +46,8 @@
   }
 
   .btn-admin {
-    padding: 8px 14px;
-    font-size: 13px;
+    padding: 7px 12px;
+    font-size: 12px;
     font-weight: bold;
     border: none;
     border-radius: 4px;
@@ -64,21 +62,11 @@
   .btn-red { background: #dc3545; color: #fff; }
   .btn-red:hover { background: #bd2130; }
 
-  /* KONTEN KATALOG (A4 PREVIEW) */
-  .catalog-container {
-    max-width: 1100px;
-    margin: 20px auto;
-    padding: 0 15px;
-  }
-
-  .catalog-page {
-    background: #fff;
+  /* CONTAINER IFRAME KATALOG */
+  .catalog-frame {
     width: 100%;
-    min-height: 1000px;
-    margin-bottom: 30px;
-    padding: 30px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-    border-radius: 4px;
+    height: calc(100vh - 55px);
+    border: none;
   }
 
   /* MODAL POP-UP UNTUK UPLOAD */
@@ -95,11 +83,12 @@
   .modal-card {
     background: #fff;
     width: 90%;
-    max-width: 600px;
+    max-width: 550px;
     padding: 25px;
     border-radius: 8px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.4);
     position: relative;
+    color: #333;
   }
 
   .modal-card h3 { margin-top: 0; color: #111; border-bottom: 2px solid #ffc400; padding-bottom: 8px; }
@@ -136,12 +125,8 @@
   </div>
 </div>
 
-<!-- TAMPILAN KATALOG DIGITAL -->
-<div class="catalog-container" id="catalogContent">
-  <div class="catalog-page">
-    <h2 style="text-align: center; color: #666; margin-top: 200px;">Memuat Tampilan Katalog...</h2>
-  </div>
-</div>
+<!-- TAMPILAN KATALOG UTAMA (DIANGKUT DARI INDEX.HTML) -->
+<iframe id="catalogIframe" src="index.html?access=guest" class="catalog-frame"></iframe>
 
 <!-- MODAL 1: UPLOAD CSV -->
 <div id="modalCSV" class="modal-overlay">
@@ -242,7 +227,7 @@
       statusEl.innerText = 'Berhasil mengunggah ' + parsedCSVData.length + ' produk!';
       setTimeout(() => {
         closeModal('modalCSV');
-        loadCatalogPreview(); // Refresh tampilan katalog
+        refreshCatalogFrame(); // Refresh iframe katalog secara langsung
       }, 1500);
 
     } catch (err) {
@@ -316,7 +301,7 @@
       statusEl.innerText = 'Berhasil memperbarui foto untuk Title ' + selectedTitle;
       setTimeout(() => {
         closeModal('modalFoto');
-        loadCatalogPreview(); // Refresh tampilan katalog
+        refreshCatalogFrame(); // Refresh iframe katalog secara langsung
       }, 1500);
 
     } catch (err) {
@@ -325,13 +310,10 @@
     }
   }
 
-  // 5. LOAD SIMULASI KATALOG
-  async function loadCatalogPreview() {
-    const container = document.getElementById('catalogContent');
-    container.innerHTML = '<div class="catalog-page"><h3>Memuat ulang data katalog terbaru dari database...</h3></div>';
-
-    // Memanggil fungsi render katalog sesuai logic index.html
-    // (Render produk per halaman A4)
+  // REFRESH IFRAME KATALOG SETELAH UPLOAD
+  function refreshCatalogFrame() {
+    const iframe = document.getElementById('catalogIframe');
+    iframe.src = iframe.src; // Reload iframe
   }
 
   function handleLogout() {
@@ -341,7 +323,6 @@
 
   // Inisialisasi
   checkAdminAuth();
-  loadCatalogPreview();
 </script>
 </body>
 </html>
