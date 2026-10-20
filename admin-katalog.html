@@ -3,101 +3,119 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin Dashboard - Katalog Sherlock</title>
+<title>Katalog Sherlock - Mode Admin</title>
 
-<!-- Supabase JS Client & PapaParse untuk Pembaca CSV -->
+<!-- Supabase Client & PapaParse untuk CSV -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
 
 <style>
   * { box-sizing: border-box; }
   body {
     font-family: Arial, sans-serif;
-    background: #f4f4f9;
+    background: #e0e0e0;
     margin: 0;
-    padding: 20px;
+    padding: 0;
     color: #333;
   }
-  .container {
-    max-width: 900px;
-    margin: 0 auto;
-    background: #fff;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+
+  /* BAR NAVIGASI ADMIN ATAS */
+  .admin-navbar {
+    background: #111;
+    color: #fff;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
   }
-  h1 { text-align: center; color: #111; margin-bottom: 25px; }
-  
-  /* TAB NAVIGATION */
-  .tab-buttons {
+
+  .admin-navbar .brand-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffc400;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .admin-menu-btns {
     display: flex;
     gap: 10px;
-    border-bottom: 2px solid #ddd;
-    margin-bottom: 20px;
-  }
-  .tab-btn {
-    padding: 10px 20px;
-    border: none;
-    background: #eee;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 6px 6px 0 0;
-  }
-  .tab-btn.active {
-    background: #ffc400;
-    color: #111;
   }
 
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
+  .btn-admin {
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: bold;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+  }
+
+  .btn-yellow { background: #ffc400; color: #111; }
+  .btn-yellow:hover { background: #e0ac00; }
+  .btn-green { background: #00a651; color: #fff; }
+  .btn-green:hover { background: #008540; }
+  .btn-red { background: #dc3545; color: #fff; }
+  .btn-red:hover { background: #bd2130; }
+
+  /* KONTEN KATALOG (A4 PREVIEW) */
+  .catalog-container {
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 0 15px;
+  }
+
+  .catalog-page {
+    background: #fff;
+    width: 100%;
+    min-height: 1000px;
+    margin-bottom: 30px;
+    padding: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    border-radius: 4px;
+  }
+
+  /* MODAL POP-UP UNTUK UPLOAD */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+  }
+
+  .modal-card {
+    background: #fff;
+    width: 90%;
+    max-width: 600px;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+    position: relative;
+  }
+
+  .modal-card h3 { margin-top: 0; color: #111; border-bottom: 2px solid #ffc400; padding-bottom: 8px; }
+  .close-btn {
+    position: absolute;
+    top: 15px; right: 20px;
+    font-size: 22px; font-weight: bold; cursor: pointer; color: #888;
+  }
+  .close-btn:hover { color: #000; }
 
   .form-group { margin-bottom: 15px; }
-  label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
-  input[type="file"], select {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-  .btn {
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: bold;
-    color: #fff;
-    background: #00a651;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  .btn:hover { background: #008540; }
-  .btn:disabled { background: #aaa; cursor: not-allowed; }
+  label { display: block; font-weight: bold; font-size: 13px; margin-bottom: 5px; }
+  input[type="file"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
 
-  .preview-box {
-    margin-top: 15px;
-    max-height: 250px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    padding: 10px;
-    font-size: 12px;
-    background: #fafafa;
-  }
-  .img-preview {
-    max-width: 180px;
-    max-height: 180px;
-    object-fit: contain;
-    margin-top: 10px;
-    border: 1px solid #ddd;
-    padding: 4px;
-  }
   .status-msg {
-    margin-top: 15px;
-    padding: 10px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 13px;
-    display: none;
+    margin-top: 10px; padding: 10px; border-radius: 4px; font-size: 13px; font-weight: bold; display: none;
   }
   .status-success { background: #d4edda; color: #155724; }
   .status-error { background: #f8d7da; color: #721c24; }
@@ -105,55 +123,63 @@
 </head>
 <body>
 
-<div class="container">
-  <h1>⚙️ Admin Management Katalog</h1>
-
-  <div class="tab-buttons">
-    <button class="tab-btn active" onclick="switchTab('task1')">1. Upload Massal (CSV)</button>
-    <button class="tab-btn" onclick="switchTab('task2')">2. Upload Foto Title Card</button>
+<!-- NAVBAR UTAMA ADMIN -->
+<div class="admin-navbar">
+  <div class="brand-title">
+    ⚙️ Mode Admin Katalog
   </div>
 
-  <!-- TASK 1: UPLOAD CSV -->
-  <div id="task1" class="tab-content active">
-    <h3>Task 1: Upload / Update Data Produk via CSV</h3>
-    <p style="font-size: 12px; color: #666;">Pastikan header CSV memiliki nama kolom: <code>SKU, Title, Page, Urutan Card, Master Kategori, Kategori, Sub Kategori, Brand, Type, Size, UOM, Harga Jabodetabek, Harga Jawa, Harga Sumatra, Harga Luar Jawa, Harga Online Jabodetabek, Harga Online Jawa, Harga Online Sumatra, Harga Online Luar Jawa</code>.</p>
+  <div class="admin-menu-btns">
+    <button class="btn-admin btn-yellow" onclick="openModal('modalCSV')">📊 Upload CSV Produk</button>
+    <button class="btn-admin btn-green" onclick="openModal('modalFoto')">📸 Upload Foto Card</button>
+    <button class="btn-admin btn-red" onclick="handleLogout()">🚪 Logout</button>
+  </div>
+</div>
+
+<!-- TAMPILAN KATALOG DIGITAL -->
+<div class="catalog-container" id="catalogContent">
+  <div class="catalog-page">
+    <h2 style="text-align: center; color: #666; margin-top: 200px;">Memuat Tampilan Katalog...</h2>
+  </div>
+</div>
+
+<!-- MODAL 1: UPLOAD CSV -->
+<div id="modalCSV" class="modal-overlay">
+  <div class="modal-card">
+    <span class="close-btn" onclick="closeModal('modalCSV')">&times;</span>
+    <h3>📊 Upload / Update Data Produk via CSV</h3>
+    <div class="form-group">
+      <label>Pilih File CSV Data Produk:</label>
+      <input type="file" id="csvFileInput" accept=".csv" onchange="handleCSVSelect()">
+    </div>
+    <div id="csvStatus" class="status-msg"></div>
+    <br>
+    <button id="btnUploadCSV" class="btn-admin btn-green" onclick="processCSVUpload()" disabled>Upload CSV ke Database 🚀</button>
+  </div>
+</div>
+
+<!-- MODAL 2: UPLOAD FOTO CARD -->
+<div id="modalFoto" class="modal-overlay">
+  <div class="modal-card">
+    <span class="close-btn" onclick="closeModal('modalFoto')">&times;</span>
+    <h3>📸 Upload Foto Title Card</h3>
+    <p style="font-size: 12px; color: #666;">Hanya menampilkan daftar Title produk yang <b>belum ada fotonya</b>.</p>
     
     <div class="form-group">
-      <label>Pilih File CSV Produk:</label>
-      <input type="file" id="csvFileInput" accept=".csv" onchange="previewCSV()">
-    </div>
-
-    <div id="csvStatus" class="status-msg"></div>
-    <div id="csvPreview" class="preview-box" style="display:none;"></div>
-
-    <br>
-    <button id="btnUploadCSV" class="btn" onclick="processCSVUpload()" disabled>Upload Data CSV ke Database 🚀</button>
-  </div>
-
-  <!-- TASK 2: UPLOAD FOTO TITLE CARD -->
-  <div id="task2" class="tab-content">
-    <h3>Task 2: Upload Foto Title Card</h3>
-    <p style="font-size: 12px; color: #666;">Daftar di bawah hanya menampilkan Title produk yang <b>belum memiliki foto</b>.</p>
-
-    <div class="form-group">
-      <label>Pilih Title Produk (Belum ada Foto):</label>
-      <select id="titleSelect" onchange="handleTitleSelection()">
-        <option value="">-- Memuat daftar title kosong... --</option>
+      <label>Pilih Title Produk (Belum ada foto):</label>
+      <select id="titleSelect" onchange="handleTitleSelect()">
+        <option value="">-- Memuat daftar... --</option>
       </select>
     </div>
 
     <div class="form-group">
-      <label>Pilih File Gambar (PNG / JPG / WEBP):</label>
-      <input type="file" id="imageFileInput" accept="image/*" onchange="previewImage()" disabled>
-    </div>
-
-    <div>
-      <img id="imgPreview" class="img-preview" style="display:none;">
+      <label>Pilih File Gambar:</label>
+      <input type="file" id="imageFileInput" accept="image/*" disabled>
     </div>
 
     <div id="photoStatus" class="status-msg"></div>
     <br>
-    <button id="btnUploadPhoto" class="btn" onclick="processPhotoUpload()" disabled>Upload & Simpan Foto 📸</button>
+    <button id="btnUploadPhoto" class="btn-admin btn-green" onclick="processPhotoUpload()" disabled>Simpan & Update Foto 📸</button>
   </div>
 </div>
 
@@ -164,22 +190,32 @@
 
   var parsedCSVData = [];
 
-  function switchTab(tabId) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
-    event.target.classList.add('active');
-    document.getElementById(tabId).classList.add('active');
-
-    if (tabId === 'task2') {
-      loadEmptyTitles();
+  // 1. CEK OTORISASI AKUN ADMIN
+  function checkAdminAuth() {
+    const savedUser = localStorage.getItem('sherlock_user');
+    if (!savedUser) {
+      window.location.href = 'login.html';
+      return;
+    }
+    const user = JSON.parse(savedUser);
+    if (user.role !== 'admin') {
+      alert('Akses Ditolak! Halaman ini khusus Admin.');
+      window.location.href = 'index.html';
     }
   }
 
-  // --- TASK 1: HANDLER CSV ---
-  function previewCSV() {
-    var fileInput = document.getElementById('csvFileInput');
-    var file = fileInput.files[0];
+  // 2. MODAL CONTROLLER
+  function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+    if (id === 'modalFoto') loadEmptyTitles();
+  }
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  // 3. LOGIKA UPLOAD CSV
+  function handleCSVSelect() {
+    const file = document.getElementById('csvFileInput').files[0];
     if (!file) return;
 
     Papa.parse(file, {
@@ -187,44 +223,40 @@
       skipEmptyLines: true,
       complete: function(results) {
         parsedCSVData = results.data;
-        var previewBox = document.getElementById('csvPreview');
-        previewBox.style.display = 'block';
-        previewBox.innerHTML = '<b>Pratinjau ' + parsedCSVData.length + ' baris data terdeteksi:</b><br><pre>' + JSON.stringify(parsedCSVData.slice(0, 3), null, 2) + '</pre>';
         document.getElementById('btnUploadCSV').disabled = false;
       }
     });
   }
 
   async function processCSVUpload() {
-    var statusEl = document.getElementById('csvStatus');
-    var btn = document.getElementById('btnUploadCSV');
-    btn.disabled = true;
+    const statusEl = document.getElementById('csvStatus');
     statusEl.style.display = 'block';
     statusEl.className = 'status-msg';
-    statusEl.innerText = 'Mengunggah data ke Supabase...';
+    statusEl.innerText = 'Mengunggah data produk...';
 
     try {
-      const { data, error } = await supabaseClient.from('products').upsert(parsedCSVData);
+      const { error } = await supabaseClient.from('products').upsert(parsedCSVData);
       if (error) throw error;
 
       statusEl.className = 'status-msg status-success';
-      statusEl.innerText = 'Berhasil mengunggah ' + parsedCSVData.length + ' data produk ke database!';
-      document.getElementById('csvFileInput').value = '';
-      document.getElementById('csvPreview').style.display = 'none';
+      statusEl.innerText = 'Berhasil mengunggah ' + parsedCSVData.length + ' produk!';
+      setTimeout(() => {
+        closeModal('modalCSV');
+        loadCatalogPreview(); // Refresh tampilan katalog
+      }, 1500);
+
     } catch (err) {
       statusEl.className = 'status-msg status-error';
-      statusEl.innerText = 'Gagal upload CSV: ' + err.message;
-      btn.disabled = false;
+      statusEl.innerText = 'Gagal upload: ' + err.message;
     }
   }
 
-  // --- TASK 2: HANDLER UPLOAD FOTO UNTUK TITLE KOSONG ---
+  // 4. LOGIKA UPLOAD FOTO TITLE CARD
   async function loadEmptyTitles() {
-    var selectEl = document.getElementById('titleSelect');
-    selectEl.innerHTML = '<option value="">-- Memuat data dari database... --</option>';
+    const selectEl = document.getElementById('titleSelect');
+    selectEl.innerHTML = '<option value="">-- Memuat data... --</option>';
 
     try {
-      // Ambil data produk yang Foto-nya NULL atau String Kosong
       const { data, error } = await supabaseClient
         .from('products')
         .select('Title')
@@ -232,123 +264,84 @@
 
       if (error) throw error;
 
-      var titleSet = new Set();
-      data.forEach(row => {
-        if (row.Title && row.Title.trim() !== '') {
-          titleSet.add(row.Title.trim());
-        }
-      });
+      const titleSet = new Set();
+      data.forEach(row => { if (row.Title) titleSet.add(row.Title.trim()); });
+      const titles = Array.from(titleSet).sort();
 
-      var sortedTitles = Array.from(titleSet).sort();
-      selectEl.innerHTML = '';
+      selectEl.innerHTML = titles.length === 0 
+        ? '<option value="">🎉 Semua Title Card sudah ada foto!</option>'
+        : '<option value="">-- Pilih Title (' + titles.length + ' Belum ada foto) --</option>';
 
-      if (sortedTitles.length === 0) {
-        selectEl.innerHTML = '<option value="">🎉 Semua Title Card sudah memiliki foto!</option>';
-        document.getElementById('imageFileInput').disabled = true;
-        return;
-      }
-
-      var defaultOpt = document.createElement('option');
-      defaultOpt.value = '';
-      defaultOpt.innerText = '-- Pilih Title (' + sortedTitles.length + ' Title Belum Ada Foto) --';
-      selectEl.appendChild(defaultOpt);
-
-      sortedTitles.forEach(title => {
-        var opt = document.createElement('option');
-        opt.value = title;
-        opt.innerText = title;
+      titles.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t; opt.innerText = t;
         selectEl.appendChild(opt);
       });
-
     } catch (err) {
-      console.error(err);
-      selectEl.innerHTML = '<option value="">Gagal memuat daftar Title</option>';
+      selectEl.innerHTML = '<option value="">Gagal memuat data</option>';
     }
   }
 
-  function handleTitleSelection() {
-    var selectedTitle = document.getElementById('titleSelect').value;
-    var imageInput = document.getElementById('imageFileInput');
-    imageInput.disabled = !selectedTitle;
-    document.getElementById('btnUploadPhoto').disabled = true;
-    document.getElementById('imgPreview').style.display = 'none';
-  }
-
-  function previewImage() {
-    var fileInput = document.getElementById('imageFileInput');
-    var file = fileInput.files[0];
-    var imgPreview = document.getElementById('imgPreview');
-
-    if (file) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        imgPreview.src = e.target.result;
-        imgPreview.style.display = 'block';
-      };
-      reader.readAsDataURL(file);
-      document.getElementById('btnUploadPhoto').disabled = false;
-    }
+  function handleTitleSelect() {
+    const val = document.getElementById('titleSelect').value;
+    document.getElementById('imageFileInput').disabled = !val;
+    document.getElementById('btnUploadPhoto').disabled = !val;
   }
 
   async function processPhotoUpload() {
-    var selectedTitle = document.getElementById('titleSelect').value;
-    var fileInput = document.getElementById('imageFileInput');
-    var file = fileInput.files[0];
-    var statusEl = document.getElementById('photoStatus');
-    var btn = document.getElementById('btnUploadPhoto');
+    const selectedTitle = document.getElementById('titleSelect').value;
+    const file = document.getElementById('imageFileInput').files[0];
+    const statusEl = document.getElementById('photoStatus');
 
     if (!selectedTitle || !file) return;
 
-    btn.disabled = true;
     statusEl.style.display = 'block';
     statusEl.className = 'status-msg';
-    statusEl.innerText = 'Mengunggah gambar ke Supabase Storage...';
+    statusEl.innerText = 'Mengunggah gambar ke Storage...';
 
     try {
-      // Format Nama File di Storage: Logo Brand/Nama_Title.png
-      var sanitizeTitle = selectedTitle.replace(/[^a-zA-Z0-9]/g, '_');
-      var fileExt = file.name.split('.').pop();
-      var fileName = 'Logo Brand/' + sanitizeTitle + '_' + Date.now() + '.' + fileExt;
+      const sanitizeTitle = selectedTitle.replace(/[^a-zA-Z0-9]/g, '_');
+      const fileName = 'Logo Brand/' + sanitizeTitle + '_' + Date.now() + '.' + file.name.split('.').pop();
 
-      // 1. Upload Gambar ke Bucket 'images'
-      const { data: uploadData, error: uploadError } = await supabaseClient
-        .storage
-        .from('images')
-        .upload(fileName, file, { upsert: true });
-
+      const { error: uploadError } = await supabaseClient.storage.from('images').upload(fileName, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      // 2. Dapatkan URL Publik
-      const { data: publicUrlData } = supabaseClient
-        .storage
-        .from('images')
-        .getPublicUrl(fileName);
+      const { data: publicUrlData } = supabaseClient.storage.from('images').getPublicUrl(fileName);
+      const publicUrl = publicUrlData.publicUrl;
 
-      var publicUrl = publicUrlData.publicUrl;
-
-      // 3. Update Kolom 'Foto' di Database untuk Semua Baris dengan Title Terkait
-      const { error: updateError } = await supabaseClient
-        .from('products')
-        .update({ Foto: publicUrl })
-        .eq('Title', selectedTitle);
-
+      const { error: updateError } = await supabaseClient.from('products').update({ Foto: publicUrl }).eq('Title', selectedTitle);
       if (updateError) throw updateError;
 
       statusEl.className = 'status-msg status-success';
-      statusEl.innerText = 'Berhasil! Foto untuk Title "' + selectedTitle + '" telah diperbarui.';
-
-      // Reset form & Refresh antrean Title Kosong
-      fileInput.value = '';
-      document.getElementById('imgPreview').style.display = 'none';
-      loadEmptyTitles();
+      statusEl.innerText = 'Berhasil memperbarui foto untuk Title ' + selectedTitle;
+      setTimeout(() => {
+        closeModal('modalFoto');
+        loadCatalogPreview(); // Refresh tampilan katalog
+      }, 1500);
 
     } catch (err) {
-      console.error(err);
       statusEl.className = 'status-msg status-error';
       statusEl.innerText = 'Gagal upload foto: ' + err.message;
-      btn.disabled = false;
     }
   }
+
+  // 5. LOAD SIMULASI KATALOG
+  async function loadCatalogPreview() {
+    const container = document.getElementById('catalogContent');
+    container.innerHTML = '<div class="catalog-page"><h3>Memuat ulang data katalog terbaru dari database...</h3></div>';
+
+    // Memanggil fungsi render katalog sesuai logic index.html
+    // (Render produk per halaman A4)
+  }
+
+  function handleLogout() {
+    localStorage.removeItem('sherlock_user');
+    window.location.href = 'login.html';
+  }
+
+  // Inisialisasi
+  checkAdminAuth();
+  loadCatalogPreview();
 </script>
 </body>
 </html>
