@@ -10,15 +10,17 @@
   * { box-sizing: border-box; }
   body {
     font-family: Arial, sans-serif;
-    background: #f4f4f9;
+    background: #e0e0e0;
     margin: 0;
     padding: 0;
     color: #333;
   }
+
+  /* BAR NAVIGASI UTAMA */
   .navbar {
     background: #111;
     color: #fff;
-    padding: 12px 20px;
+    padding: 10px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -44,10 +46,11 @@
     background: #222;
     color: #fff;
     font-weight: bold;
+    cursor: pointer;
   }
   .btn-nav {
     padding: 7px 12px;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: bold;
     border: none;
     border-radius: 4px;
@@ -64,24 +67,90 @@
   .btn-red { background: #dc3545; color: #fff; }
   .btn-red:hover { background: #bd2130; }
 
-  .content-container {
-    max-width: 1200px;
-    margin: 20px auto;
-    padding: 0 15px;
-  }
-  .catalog-card {
+  /* BANNER GREETING */
+  .greeting-banner {
+    max-width: 1100px;
+    margin: 15px auto 5px auto;
     background: #fff;
-    padding: 20px;
-    border-radius: 8px;
+    padding: 15px 20px;
+    border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+  }
+  .greeting-banner h3 { margin: 0 0 5px 0; color: #111; font-size: 16px; }
+  .greeting-banner p { margin: 0; color: #666; font-size: 13px; }
+
+  /* CONTAINER HALAMAN KATALOG */
+  .catalog-container {
+    max-width: 1100px;
+    margin: 15px auto 40px auto;
+    padding: 0 10px;
+  }
+
+  .catalog-page {
+    background: #fff;
+    width: 100%;
+    min-height: 1000px;
+    margin-bottom: 25px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    border-radius: 4px;
+  }
+
+  .loading-box {
+    text-align: center;
+    padding: 80px 20px;
+    color: #666;
+  }
+
+  /* GRID PRODUK / ITEM KATALOG */
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+  }
+
+  .product-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 12px;
+    background: #fafafa;
+    text-align: center;
+  }
+
+  .product-card img {
+    max-width: 100%;
+    height: 140px;
+    object-fit: contain;
+    margin-bottom: 10px;
+    border-radius: 4px;
+  }
+
+  .product-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #111;
+    margin-bottom: 5px;
+  }
+
+  .product-sku {
+    font-size: 11px;
+    color: #888;
+    margin-bottom: 8px;
+  }
+
+  .product-price {
+    font-size: 14px;
+    font-weight: bold;
+    color: #00a651;
   }
 </style>
 </head>
 <body>
 
+<!-- BAR NAVIGASI -->
 <div class="navbar">
-  <div class="brand">Sherlock Catalog</div>
+  <div class="brand">Sherlock Tools</div>
   
   <div class="nav-controls">
     <label style="font-size: 12px; color: #aaa;">Wilayah:</label>
@@ -98,10 +167,18 @@
   </div>
 </div>
 
-<div class="content-container">
-  <div class="catalog-card">
-    <h2 id="welcomeMsg">Memuat Katalog Produk...</h2>
-    <p id="subMsg">Silakan tunggu sejenak.</p>
+<!-- BANNER UCAPAN WELCOME -->
+<div class="greeting-banner">
+  <h3 id="welcomeMsg">Memuat Katalog...</h3>
+  <p id="subMsg">Silakan tunggu sejenak saat sistem menyinkronkan data.</p>
+</div>
+
+<!-- KONTEN UTAMA KATALOG -->
+<div class="catalog-container" id="catalogContent">
+  <div class="catalog-page">
+    <div class="loading-box">
+      <h3>🔄 Memuat data produk dari database...</h3>
+    </div>
   </div>
 </div>
 
@@ -111,8 +188,9 @@
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let currentUser = null;
+  let allProducts = [];
 
-  function checkAccess() {
+  async function checkAccess() {
     const urlParams = new URLSearchParams(window.location.search);
     const isGuestAccess = urlParams.get('access') === 'guest';
     const regionParam = urlParams.get('region');
@@ -121,14 +199,17 @@
       document.getElementById('regionSelect').value = regionParam;
     }
 
+    // 1. Jika Akses Toko via Link Share
     if (isGuestAccess) {
       const salesName = urlParams.get('sales') || 'Official';
       document.getElementById('welcomeMsg').innerText = `Katalog Digital Sherlock (${document.getElementById('regionSelect').value})`;
-      document.getElementById('subMsg').innerText = `Direkomendasikan oleh Sales: ${salesName}`;
+      document.getElementById('subMsg').innerText = `Rekomendasi dari Sales: ${salesName}`;
       updatePrintPdfLink();
+      loadProductsFromDatabase();
       return; 
     }
 
+    // 2. Jika Akses Sales / Admin
     const savedUser = localStorage.getItem('sherlock_user');
     if (!savedUser) {
       window.location.href = 'login.html';
@@ -147,16 +228,84 @@
     }
 
     document.getElementById('welcomeMsg').innerText = `Selamat Datang, ${currentUser.name}!`;
-    document.getElementById('subMsg').innerText = `Katalog Wilayah: ${document.getElementById('regionSelect').value}`;
+    document.getElementById('subMsg').innerText = `Wilayah Aktif: ${document.getElementById('regionSelect').value}`;
     updatePrintPdfLink();
+    loadProductsFromDatabase();
+  }
+
+  // FETCH DATA PRODUK DARI SUPABASE
+  async function loadProductsFromDatabase() {
+    const container = document.getElementById('catalogContent');
+    
+    try {
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select('*');
+
+      if (error) throw error;
+
+      allProducts = data || [];
+      renderCatalogCards();
+
+    } catch (err) {
+      console.error(err);
+      container.innerHTML = `
+        <div class="catalog-page">
+          <div class="loading-box" style="color:#dc3545;">
+            <h3>⚠️ Gagal memuat produk dari database</h3>
+            <p>${err.message}</p>
+          </div>
+        </div>`;
+    }
+  }
+
+  // RENDER PRODUK KE DALAM KATALOG
+  function renderCatalogCards() {
+    const container = document.getElementById('catalogContent');
+    const selectedRegion = document.getElementById('regionSelect').value;
+    const priceColumn = `Harga ${selectedRegion}`;
+
+    if (allProducts.length === 0) {
+      container.innerHTML = `
+        <div class="catalog-page">
+          <div class="loading-box">
+            <h3>📦 Belum ada data produk di database.</h3>
+            <p>Silakan upload CSV via Admin Dashboard.</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    let html = '<div class="catalog-page"><div class="product-grid">';
+
+    allProducts.forEach(item => {
+      const title = item.Title || item.SKU || 'Produk Sherlock';
+      const sku = item.SKU || '-';
+      const imgUrl = item.Foto || 'https://via.placeholder.com/200?text=No+Image';
+      const priceVal = item[priceColumn] || item['Harga Jabodetabek'] || 0;
+      const formattedPrice = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(priceVal);
+
+      html += `
+        <div class="product-card">
+          <img src="${imgUrl}" alt="${title}" onerror="this.src='https://via.placeholder.com/200?text=No+Image'">
+          <div class="product-title">${title}</div>
+          <div class="product-sku">SKU: ${sku}</div>
+          <div class="product-price">${formattedPrice}</div>
+        </div>
+      `;
+    });
+
+    html += '</div></div>';
+    container.innerHTML = html;
   }
 
   function handleRegionChange() {
     const selectedRegion = document.getElementById('regionSelect').value;
     updatePrintPdfLink();
     if (currentUser) {
-      document.getElementById('subMsg').innerText = `Katalog Wilayah: ${selectedRegion}`;
+      document.getElementById('subMsg').innerText = `Wilayah Aktif: ${selectedRegion}`;
     }
+    renderCatalogCards(); // Refresh harga sesuai wilayah yang dipilih
   }
 
   function updatePrintPdfLink() {
