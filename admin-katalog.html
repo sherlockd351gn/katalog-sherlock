@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard - Katalog Sherlock</title>
+
+<!-- Supabase JS Client & PapaParse untuk Pembaca CSV -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.min.js"></script>
+
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f9;
+    margin: 0;
+    padding: 20px;
+    color: #333;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  }
+  h1 { text-align: center; color: #111; margin-bottom: 25px; }
+  
+  /* TAB NAVIGATION */
+  .tab-buttons {
+    display: flex;
+    gap: 10px;
+    border-bottom: 2px solid #ddd;
+    margin-bottom: 20px;
+  }
+  .tab-btn {
+    padding: 10px 20px;
+    border: none;
+    background: #eee;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 6px 6px 0 0;
+  }
+  .tab-btn.active {
+    background: #ffc400;
+    color: #111;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .form-group { margin-bottom: 15px; }
+  label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 13px; }
+  input[type="file"], select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #fff;
+    background: #00a651;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .btn:hover { background: #008540; }
+  .btn:disabled { background: #aaa; cursor: not-allowed; }
+
+  .preview-box {
+    margin-top: 15px;
+    max-height: 250px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    font-size: 12px;
+    background: #fafafa;
+  }
+  .img-preview {
+    max-width: 180px;
+    max-height: 180px;
+    object-fit: contain;
+    margin-top: 10px;
+    border: 1px solid #ddd;
+    padding: 4px;
+  }
+  .status-msg {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 13px;
+    display: none;
+  }
+  .status-success { background: #d4edda; color: #155724; }
+  .status-error { background: #f8d7da; color: #721c24; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>⚙️ Admin Management Katalog</h1>
+
+  <div class="tab-buttons">
+    <button class="tab-btn active" onclick="switchTab('task1')">1. Upload Massal (CSV)</button>
+    <button class="tab-btn" onclick="switchTab('task2')">2. Upload Foto Title Card</button>
+  </div>
+
+  <!-- TASK 1: UPLOAD CSV -->
+  <div id="task1" class="tab-content active">
+    <h3>Task 1: Upload / Update Data Produk via CSV</h3>
+    <p style="font-size: 12px; color: #666;">Pastikan header CSV memiliki nama kolom: <code>SKU, Title, Page, Urutan Card, Master Kategori, Kategori, Sub Kategori, Brand, Type, Size, UOM, Harga Jabodetabek, Harga Jawa, Harga Sumatra, Harga Luar Jawa, Harga Online Jabodetabek, Harga Online Jawa, Harga Online Sumatra, Harga Online Luar Jawa</code>.</p>
+    
+    <div class="form-group">
+      <label>Pilih File CSV Produk:</label>
+      <input type="file" id="csvFileInput" accept=".csv" onchange="previewCSV()">
+    </div>
+
+    <div id="csvStatus" class="status-msg"></div>
+    <div id="csvPreview" class="preview-box" style="display:none;"></div>
+
+    <br>
+    <button id="btnUploadCSV" class="btn" onclick="processCSVUpload()" disabled>Upload Data CSV ke Database 🚀</button>
+  </div>
+
+  <!-- TASK 2: UPLOAD FOTO TITLE CARD -->
+  <div id="task2" class="tab-content">
+    <h3>Task 2: Upload Foto Title Card</h3>
+    <p style="font-size: 12px; color: #666;">Daftar di bawah hanya menampilkan Title produk yang <b>belum memiliki foto</b>.</p>
+
+    <div class="form-group">
+      <label>Pilih Title Produk (Belum ada Foto):</label>
+      <select id="titleSelect" onchange="handleTitleSelection()">
+        <option value="">-- Memuat daftar title kosong... --</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Pilih File Gambar (PNG / JPG / WEBP):</label>
+      <input type="file" id="imageFileInput" accept="image/*" onchange="previewImage()" disabled>
+    </div>
+
+    <div>
+      <img id="imgPreview" class="img-preview" style="display:none;">
+    </div>
+
+    <div id="photoStatus" class="status-msg"></div>
+    <br>
+    <button id="btnUploadPhoto" class="btn" onclick="processPhotoUpload()" disabled>Upload & Simpan Foto 📸</button>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://yarudntqrnwljykieugl.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlhcnVkbnRxcm53bGp5a2lldWdsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE1OTc1NTIsImV4cCI6MjEwNzE3MzU1Mn0.cdJbmQhc_xqCJPOjJcDRJapgG9bIXjj0XbrB6RpYXKI';
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  var parsedCSVData = [];
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    event.target.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+
+    if (tabId === 'task2') {
+      loadEmptyTitles();
+    }
+  }
+
+  // --- TASK 1: HANDLER CSV ---
+  function previewCSV() {
+    var fileInput = document.getElementById('csvFileInput');
+    var file = fileInput.files[0];
+    if (!file) return;
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function(results) {
+        parsedCSVData = results.data;
+        var previewBox = document.getElementById('csvPreview');
+        previewBox.style.display = 'block';
+        previewBox.innerHTML = '<b>Pratinjau ' + parsedCSVData.length + ' baris data terdeteksi:</b><br><pre>' + JSON.stringify(parsedCSVData.slice(0, 3), null, 2) + '</pre>';
+        document.getElementById('btnUploadCSV').disabled = false;
+      }
+    });
+  }
+
+  async function processCSVUpload() {
+    var statusEl = document.getElementById('csvStatus');
+    var btn = document.getElementById('btnUploadCSV');
+    btn.disabled = true;
+    statusEl.style.display = 'block';
+    statusEl.className = 'status-msg';
+    statusEl.innerText = 'Mengunggah data ke Supabase...';
+
+    try {
+      const { data, error } = await supabaseClient.from('products').upsert(parsedCSVData);
+      if (error) throw error;
+
+      statusEl.className = 'status-msg status-success';
+      statusEl.innerText = 'Berhasil mengunggah ' + parsedCSVData.length + ' data produk ke database!';
+      document.getElementById('csvFileInput').value = '';
+      document.getElementById('csvPreview').style.display = 'none';
+    } catch (err) {
+      statusEl.className = 'status-msg status-error';
+      statusEl.innerText = 'Gagal upload CSV: ' + err.message;
+      btn.disabled = false;
+    }
+  }
+
+  // --- TASK 2: HANDLER UPLOAD FOTO UNTUK TITLE KOSONG ---
+  async function loadEmptyTitles() {
+    var selectEl = document.getElementById('titleSelect');
+    selectEl.innerHTML = '<option value="">-- Memuat data dari database... --</option>';
+
+    try {
+      // Ambil data produk yang Foto-nya NULL atau String Kosong
+      const { data, error } = await supabaseClient
+        .from('products')
+        .select('Title')
+        .or('Foto.is.null,Foto.eq.');
+
+      if (error) throw error;
+
+      var titleSet = new Set();
+      data.forEach(row => {
+        if (row.Title && row.Title.trim() !== '') {
+          titleSet.add(row.Title.trim());
+        }
+      });
+
+      var sortedTitles = Array.from(titleSet).sort();
+      selectEl.innerHTML = '';
+
+      if (sortedTitles.length === 0) {
+        selectEl.innerHTML = '<option value="">🎉 Semua Title Card sudah memiliki foto!</option>';
+        document.getElementById('imageFileInput').disabled = true;
+        return;
+      }
+
+      var defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.innerText = '-- Pilih Title (' + sortedTitles.length + ' Title Belum Ada Foto) --';
+      selectEl.appendChild(defaultOpt);
+
+      sortedTitles.forEach(title => {
+        var opt = document.createElement('option');
+        opt.value = title;
+        opt.innerText = title;
+        selectEl.appendChild(opt);
+      });
+
+    } catch (err) {
+      console.error(err);
+      selectEl.innerHTML = '<option value="">Gagal memuat daftar Title</option>';
+    }
+  }
+
+  function handleTitleSelection() {
+    var selectedTitle = document.getElementById('titleSelect').value;
+    var imageInput = document.getElementById('imageFileInput');
+    imageInput.disabled = !selectedTitle;
+    document.getElementById('btnUploadPhoto').disabled = true;
+    document.getElementById('imgPreview').style.display = 'none';
+  }
+
+  function previewImage() {
+    var fileInput = document.getElementById('imageFileInput');
+    var file = fileInput.files[0];
+    var imgPreview = document.getElementById('imgPreview');
+
+    if (file) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        imgPreview.src = e.target.result;
+        imgPreview.style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+      document.getElementById('btnUploadPhoto').disabled = false;
+    }
+  }
+
+  async function processPhotoUpload() {
+    var selectedTitle = document.getElementById('titleSelect').value;
+    var fileInput = document.getElementById('imageFileInput');
+    var file = fileInput.files[0];
+    var statusEl = document.getElementById('photoStatus');
+    var btn = document.getElementById('btnUploadPhoto');
+
+    if (!selectedTitle || !file) return;
+
+    btn.disabled = true;
+    statusEl.style.display = 'block';
+    statusEl.className = 'status-msg';
+    statusEl.innerText = 'Mengunggah gambar ke Supabase Storage...';
+
+    try {
+      // Format Nama File di Storage: Logo Brand/Nama_Title.png
+      var sanitizeTitle = selectedTitle.replace(/[^a-zA-Z0-9]/g, '_');
+      var fileExt = file.name.split('.').pop();
+      var fileName = 'Logo Brand/' + sanitizeTitle + '_' + Date.now() + '.' + fileExt;
+
+      // 1. Upload Gambar ke Bucket 'images'
+      const { data: uploadData, error: uploadError } = await supabaseClient
+        .storage
+        .from('images')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // 2. Dapatkan URL Publik
+      const { data: publicUrlData } = supabaseClient
+        .storage
+        .from('images')
+        .getPublicUrl(fileName);
+
+      var publicUrl = publicUrlData.publicUrl;
+
+      // 3. Update Kolom 'Foto' di Database untuk Semua Baris dengan Title Terkait
+      const { error: updateError } = await supabaseClient
+        .from('products')
+        .update({ Foto: publicUrl })
+        .eq('Title', selectedTitle);
+
+      if (updateError) throw updateError;
+
+      statusEl.className = 'status-msg status-success';
+      statusEl.innerText = 'Berhasil! Foto untuk Title "' + selectedTitle + '" telah diperbarui.';
+
+      // Reset form & Refresh antrean Title Kosong
+      fileInput.value = '';
+      document.getElementById('imgPreview').style.display = 'none';
+      loadEmptyTitles();
+
+    } catch (err) {
+      console.error(err);
+      statusEl.className = 'status-msg status-error';
+      statusEl.innerText = 'Gagal upload foto: ' + err.message;
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>
