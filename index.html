@@ -806,18 +806,6 @@
     return 'Rp ' + cleanNum.toLocaleString('id-ID');
   }
 
-  // --- OPTIMASI GAMBAR UNTUK MENGHEMAT EGRESS SUPABASE ---
-  function getOptimizedImageUrl(originalUrl, targetWidth = 350) {
-    if (!originalUrl || typeof originalUrl !== 'string') return '';
-    if (originalUrl.includes('supabase.co/storage/v1/object/public/')) {
-      return originalUrl.replace(
-        '/storage/v1/object/public/',
-        '/storage/v1/render/image/public/'
-      ) + `?width=${targetWidth}&quality=70&format=webp`;
-    }
-    return originalUrl;
-  }
-
   function updateWilayah(selectedRegion) {
     if (globalPagesData) renderCatalog(selectedRegion);
   }
@@ -860,15 +848,12 @@
             </tr>`;
         });
 
-        var optPhoto = getOptimizedImageUrl(prod.photo, 350);
-        var optBrand = getOptimizedImageUrl(prod.brand, 180);
-
-        var photoHTML = (optPhoto && typeof optPhoto === 'string' && optPhoto.startsWith('http')) 
-          ? `<img src="${optPhoto}" alt="Foto Produk" onclick="zoomImage('${prod.photo}')">` 
+        var photoHTML = (prod.photo && typeof prod.photo === 'string' && prod.photo.startsWith('http')) 
+          ? `<img src="${prod.photo}" alt="Foto Produk" onclick="zoomImage(this.src)">` 
           : '<div style="color:#aaa;font-size:10px;font-weight:bold;">FOTO PRODUK</div>';
 
-        var brandHTML = (optBrand && typeof optBrand === 'string' && optBrand.startsWith('http'))
-          ? `<img src="${optBrand}" alt="Logo Brand" onclick="zoomImage('${prod.brand}')">`
+        var brandHTML = (prod.brand && typeof prod.brand === 'string' && prod.brand.startsWith('http'))
+          ? `<img src="${prod.brand}" alt="Logo Brand" onclick="zoomImage(this.src)">`
           : `◈ ${prod.brand || 'SHERLOCK'}<small>British Standard Tools</small>`;
 
         var tableHeadHTML = hideOnline ? `
